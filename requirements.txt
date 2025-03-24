@@ -1,0 +1,8 @@
+livekit-agents
+livekit-plugins-openai
+python-dotenv
+pydantic
+supabase
+psycopg2-binary
+python-dateutil
+openai-agents
