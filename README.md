@@ -34,10 +34,7 @@ An intelligent sales agent system built with Python that handles customer intera
 
 ## Dependencies
 
-```toml
-- livekit v0.22.0+: Real-time communication
-- livekit-agents v0.12.17+: Agent framework
-- livekit-plugins-openai v0.11.3+: OpenAI integration
+```txt
 - openai-agents v0.0.5+: AI agent capabilities
 - psycopg2-binary v2.9.10+: PostgreSQL database connection
 - pydantic v2.10.6+: Data validation
