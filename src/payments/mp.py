@@ -44,7 +44,6 @@ def auto_schema(name_override: str):
         async def wrapper(ctx: RunContextWrapper[Any], *args, **kwargs):
             return await func(ctx, *args, **kwargs)
 
-        # Aplicar el decorador function_tool con el nombre personalizado
         return function_tool(name_override=name_override)(wrapper)
 
     return decorator
@@ -80,14 +79,12 @@ async def create_mercadopago_link(
     if (mp_token is None or price is None):
         raise Exception("Mercado Pago token or price not set")
     
-    # Handle default values within the function
     if quantity is None:
         quantity = 1
         
     sdk = mercadopago.SDK(mp_token)
     logger.debug("Creating mercado pago link")
     
-    # Build item with provided parameters
     item = {
         "title": title,
         "quantity": quantity,
@@ -97,7 +94,6 @@ async def create_mercadopago_link(
     if description:
         item["description"] = description
     
-    # Construct preference_data
     preference_data = {
         "metadata": {
             "id": id,
@@ -106,7 +102,6 @@ async def create_mercadopago_link(
         "notification_url": get_apps_script_endpoint()
     }
     
-    # Add external_reference if present
     if external_reference:
         preference_data["external_reference"] = external_reference
     

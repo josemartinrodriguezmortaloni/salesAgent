@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Callable, get_type_hints, Union
+from typing import Any, Callable
 from datetime import datetime
 from .supabase_client import supabase
 from .models import (
@@ -6,14 +6,11 @@ from .models import (
     Compra,
     TipoCompra,
     ProductoInput,
-    TipoCompraInput,
-    ProductoCompraInput,
     CompraInput,
     ReporteVentasInput,
 )
 from rich.console import Console
 from agents import function_tool, RunContextWrapper
-from inspect import signature, Parameter
 from functools import wraps
 from pydantic import BaseModel
 
@@ -41,7 +38,6 @@ def auto_schema(name_override: str):
         async def wrapper(ctx: RunContextWrapper[Any], *args, **kwargs):
             return await func(ctx, *args, **kwargs)
 
-        # Aplicar el decorador function_tool con el nombre personalizado
         return function_tool(name_override=name_override)(wrapper)
 
     return decorator
