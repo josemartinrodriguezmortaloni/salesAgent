@@ -1,10 +1,8 @@
 import os
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
 import mercadopago
 import logging as logger
 from typing import Any, Callable, Optional
-from datetime import datetime
 from agents import function_tool, RunContextWrapper
 from functools import wraps
 
@@ -53,33 +51,53 @@ def auto_schema(name_override: str):
 
 
 @auto_schema(name_override="create_mercadopago_link")
-def create_mercadopago_link(
+async def create_mercadopago_link(
+    ctx: RunContextWrapper[Any],
     id: int,
     price: float,
     title: str,
-    quantity: int = 1,
+    # Parámetros opcionales sin valores por defecto
+    quantity: Optional[int] = None,
     description: Optional[str] = None,
-    external_reference: Optional[str] = None,
-    success_url: Optional[str] = None,
-    failure_url: Optional[str] = None,
-    pending_url: Optional[str] = None,
-    expires: bool = False,
-    binary_mode: bool = False
+    external_reference: Optional[str] = None
 ):
+    """
+    Creates a Mercado Pago payment link.
+    
+    Args:
+        ctx: The context wrapper
+        id: Transaction identifier
+        price: Price of the item
+        title: Title of the purchase
+        quantity: Quantity of items (default 1 if not provided)
+        description: Optional description
+        external_reference: Optional external reference for tracking
+    
+    Returns:
+        str: The payment link URL
+    """
     mp_token = os.environ.get("MP_ACCESS_TOKEN")
     if (mp_token is None or price is None):
         raise Exception("Mercado Pago token or price not set")
+    
+    # Handle default values within the function
+    if quantity is None:
+        quantity = 1
+        
     sdk = mercadopago.SDK(mp_token)
     logger.debug("Creating mercado pago link")
-
+    
+    # Build item with provided parameters
     item = {
         "title": title,
         "quantity": quantity,
         "unit_price": price,
     }
+    
     if description:
         item["description"] = description
     
+    # Construct preference_data
     preference_data = {
         "metadata": {
             "id": id,
@@ -88,25 +106,9 @@ def create_mercadopago_link(
         "notification_url": get_apps_script_endpoint()
     }
     
+    # Add external_reference if present
     if external_reference:
         preference_data["external_reference"] = external_reference
-    
-    if success_url or failure_url or pending_url:
-        preference_data["back_urls"] = {}
-        if success_url:
-            preference_data["back_urls"]["success"] = success_url
-        if failure_url:
-            preference_data["back_urls"]["failure"] = failure_url
-        if pending_url:
-            preference_data["back_urls"]["pending"] = pending_url
-    
-    if binary_mode:
-        preference_data["binary_mode"] = True
-    
-    if expires:
-        expiration_date = (datetime.now() + timedelta(hours=24)).isoformat()
-        preference_data["expires"] = True
-        preference_data["expiration_date_from"] = expiration_date
     
     logger.debug(preference_data)
     preference_response = sdk.preference().create(preference_data)
