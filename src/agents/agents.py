@@ -1,4 +1,4 @@
-from agents import Agent, Runner, handoff, RunContextWrapper
+from agents import Agent, Runner, handoff, RunContextWrapper, OpenAIChatCompletionsModel, AsyncOpenAI
 from dotenv import load_dotenv
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
@@ -162,6 +162,17 @@ async def on_handoff(
     }
 
     console.print("\n[bold yellow]Transferring to Agent...[/bold yellow]")
+    agent_type = ctx.context.current_agent
+    if agent_type == "products":
+        # Al terminar, establecer el agente actual a ventas para continuar el flujo
+        ctx.context.current_agent = "sales"
+        
+        # Si hay productos en la orden actual sin precio, establece el precio por defecto
+        for product_name, order_item in ctx.context.current_order.items():
+            if order_item.precio_unitario is None:
+                order_item.precio_unitario = 10.0  # Precio por defecto en USD
+                console.print(f"[bold green]Updating price for {product_name} to $10.00[/bold green]")
+
 
     # Create a table for handoff information
     table = Table(title="[bold yellow]Handoff Information[/bold yellow]")
@@ -200,9 +211,9 @@ IMPORTANT: Always respond in the same language the request was made. Match langu
 ## HANDLING INTER-AGENT REQUESTS
 - When another agent requests product information, focus on providing complete data
 - ALWAYS include price information when describing products
-- If you don't have a specific product in the database, provide the closest match
+- If you don't have a specific product in the database, provide the closest match AND update the product with the recommended price
 - Format responses in a structured way that's easy for other agents to parse
-- For pizza products, if not found in database, use a default price of $10.00 USD per pizza
+- For pizza products, if not found in database, automatically set a default price of $10.00 USD per pizza
 
 ## KEY BEHAVIORS
 - Be precise with product details
@@ -225,6 +236,10 @@ IMPORTANT: Always respond in the same language the request was made. Match langu
             get_producto,
             crear_producto,
         ],
+        model = OpenAIChatCompletionsModel( 
+            model="o3-mini",
+            openai_client=AsyncOpenAI()
+        ),
     )
     
     products_handoff = handoff(
@@ -308,6 +323,10 @@ Remember that payment confirmations via Mercado Pago will be processed through w
             create_mercadopago_link,
         ],
         handoffs=[products_handoff], 
+        model = OpenAIChatCompletionsModel( 
+            model="o3-mini",
+            openai_client=AsyncOpenAI()
+        ),  
     )
     
     sales_handoff = handoff(
@@ -352,6 +371,10 @@ IMPORTANT: Always respond in the same language the customer uses. Match their la
 - Facilitate smooth transitions between specialized agents
 """,
         handoffs=[sales_handoff, products_handoff],
+        model = OpenAIChatCompletionsModel( 
+            model="o3-mini",
+            openai_client=AsyncOpenAI()
+        ),        
     )
 
     async def run(self, prompt: str, context: ChatContext) -> str:
