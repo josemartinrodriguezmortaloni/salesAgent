@@ -9,6 +9,7 @@ dependencies = [
     { name = "livekit" },
     { name = "livekit-agents" },
     { name = "livekit-plugins-openai" },
+    { name = "mercadopago" },
     { name = "openai-agents" },
     { name = "psycopg2-binary" },
     { name = "pydantic" },
@@ -23,6 +24,7 @@ requires-dist = [
     { name = "livekit", specifier = ">=0.22.0" },
     { name = "livekit-agents", specifier = ">=0.12.17" },
     { name = "livekit-plugins-openai", specifier = ">=0.11.3" },
+    { name = "mercadopago", specifier = ">=2.3.0" },
     { name = "openai-agents", specifier = ">=0.0.5" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.10.6" },
@@ -603,6 +605,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979 },
+]
+
+[[package]]
+name = "mercadopago"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7d/f6/d50dfcf959ba35de795e54f39ee1814b364ad5772fde1a058276275adf4f/mercadopago-2.3.0.tar.gz", hash = "sha256:8537e9de5d987b545841b05bb35675553b22e661b96ffc4fb178ffba846ff2d7", size = 24015 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6a/be/f23a9ace6327ecd246cbc2068b72c21ffde743e00f4985668617e30730b7/mercadopago-2.3.0-py3-none-any.whl", hash = "sha256:2502cb005ab90343d60e577107b422daeff27511f85c45a7bf0784ac2083f2c7", size = 35713 },
 ]
 
 [[package]]
