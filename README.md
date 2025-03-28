@@ -6,7 +6,10 @@ An intelligent sales agent system built with Python that handles customer intera
 
 Watch our demo video showcasing the Sales Agent in action:
 
-[![Sales Agent Demo](docs/demo.mp4)](docs/demo.mp4)
+
+https://github.com/user-attachments/assets/44fe3cf9-8b3a-43c8-9cd9-0e9836c80fe8
+
+
 
 ## 🚀 Quick Start
 
