@@ -6,10 +6,7 @@ An intelligent sales agent system built with Python that handles customer intera
 
 Watch our demo video showcasing the Sales Agent in action:
 
-
-https://github.com/user-attachments/assets/44fe3cf9-8b3a-43c8-9cd9-0e9836c80fe8
-
-
+[![Sales Agent Demo](docs/demo.mp4)](docs/demo.mp4)
 
 ## 🚀 Quick Start
 
@@ -37,9 +34,14 @@ uv sync
 4. Create a `.env` file with your configuration:
 
 ```env
-OPENAI_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_openai_api_key
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_key
+MP_PUBLIC_KEY=your_mercadopago_public_key
+MP_ACCESS_TOKEN=your_mercadopago_access_token
+MP_WEBHOOK_URL=your_webhook_url
+MP_DEV_WEBHOOK_URL=your_dev_webhook_url
+MP_DEV_MODE=false
 ```
 
 5. Run the application:
@@ -65,10 +67,9 @@ uv run .
 ### 💼 Sales Features
 
 - Order management and tracking
-- Multiple payment methods support:
-  - Bank transfers
-  - Cash payments
-  - Card payments
+- Payment processing:
+  - Currently supports MercadoPago payment links
+  - Additional payment methods planned for future implementation
 - Automated sales reporting
 - Product catalog management
 
@@ -81,13 +82,14 @@ uv run .
 ## 📦 Dependencies
 
 ```txt
-- openai-agents v0.0.5+: AI agent capabilities
-- psycopg2-binary v2.9.10+: PostgreSQL database connection
-- pydantic v2.10.6+: Data validation
-- python-dateutil v2.9.0+: Date handling
-- python-dotenv v1.0.1+: Environment configuration
-- rich v13.9.4+: Console output formatting
-- supabase v2.14.0+: Database management
+- mercadopago>=2.3.0: Payment processing
+- openai-agents>=0.0.5: AI agent capabilities
+- psycopg2-binary>=2.9.10: PostgreSQL database connection
+- pydantic>=2.10.6: Data validation
+- python-dateutil>=2.9.0.post0: Date handling
+- python-dotenv>=1.0.1: Environment configuration
+- rich>=13.9.4: Console output formatting
+- supabase>=2.14.0: Database management
 ```
 
 ## 📁 Project Structure
@@ -109,28 +111,19 @@ salesAgent/
 └── README.md          # Project documentation
 ```
 
-## 💡 Usage Examples
-
-```python
-# Initialize the chat context
-context = ChatContext(uid=1)
-
-# Example customer interaction
-response = await agents.run("Quiero comprar 2 pizzas", context)
-# Agent responds in Spanish: "¡Claro! He agregado 2 pizzas a tu orden..."
-
-# English interaction
-response = await agents.run("I want to buy 2 pizzas", context)
-# Agent responds in English: "Sure! I've added 2 pizzas to your order..."
-```
-
 ## 🚧 Features in Development
 
-- [ ] Enhanced product recommendations
-- [ ] Integration with more payment providers
-- [ ] Advanced analytics dashboard
-- [ ] Customer loyalty system
-- [ ] Multi-channel support
+- [ ] WhatsApp Integration
+  - Direct messaging support
+  - Automated responses
+  - Order tracking via WhatsApp
+  - Payment notifications
+- [ ] Admin Dashboard
+  - Secure admin-only access
+  - Sales analytics and reporting
+  - Order management interface
+  - Product catalog management
+  - User management and permissions
 
 ## 🤝 Contributing
 

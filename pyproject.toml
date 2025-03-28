@@ -5,9 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "livekit>=0.22.0",
-    "livekit-agents>=0.12.17",
-    "livekit-plugins-openai>=0.11.3",
     "mercadopago>=2.3.0",
     "openai-agents>=0.0.5",
     "psycopg2-binary>=2.9.10",
