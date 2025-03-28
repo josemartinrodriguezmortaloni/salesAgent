@@ -36,7 +36,7 @@ async def show_database_status():
 
         # Añadir información a la tabla
         table.add_row("Conectado correctamente", "✅")
-        table.add_row("Latencia", f"{response.execution_time_client:.2f}ms")
+        table.add_row("Latencia", "No disponible")
         table.add_row("Registros", f"{len(products)} productos")
 
         console.print(table)

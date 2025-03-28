@@ -12,7 +12,6 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 from datetime import datetime
 import uuid
-from dotenv import load_dotenv
 from ..db.database import (
     get_productos,
     crear_compra,

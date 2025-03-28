@@ -55,7 +55,7 @@ def auto_schema(name_override: str):
 @auto_schema(name_override="create_mercadopago_link")
 async def create_mercadopago_link(
     ctx: RunContextWrapper[Any],
-    amount: float,  # Cambiar a float para manejar correctamente el monto
+    amount: float,
     title: str,
     description: str,
     external_reference: Optional[str] = None,
