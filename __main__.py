@@ -6,92 +6,112 @@ Initializes the agent system with Supabase and handles user interactions.
 
 from src.agents.agents import Agents, ChatContext
 import asyncio
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Prompt
+import traceback
+from datetime import datetime
 
-# Initialize Rich console
 console = Console()
 
-
-async def display_agent_response(result: str):
-    """Display the agent's response in a nicely formatted panel."""
-    console.print(
-        Panel(
-            result,
-            title="[bold blue]Assistant[/bold blue]",
-            border_style="blue",
-            padding=(1, 2),
-        )
-    )
+load_dotenv()
 
 
-async def display_user_message(message: str):
-    """Display the user's message in a nicely formatted panel."""
-    console.print(
-        Panel(
-            message,
-            title="[bold green]User[/bold green]",
-            border_style="green",
-            padding=(1, 2),
-        )
-    )
+async def show_database_status():
+    """Muestra el estado de la base de datos al iniciar la aplicación"""
+    try:
+        console.print("\n" + "─" * 80)
+        console.print("[bold cyan]🗃️ COMPROBANDO ESTADO DE LA BASE DE DATOS[/bold cyan]")
 
-
-async def main():
-    # Display welcome message
-    console.print(
-        Panel(
-            "[bold green]¡Bienvenido a nuestro sistema de ventas![/bold green]\n"
-            "Escribe 'exit' para salir.",
-            title="[bold blue]Sistema de Ventas[/bold blue]",
-            border_style="blue",
-        )
-    )
-
-    agents = Agents()
-    context = ChatContext(uid=1)  # Initialize chat context
-
-    while True:
+        # Implementación básica temporal
         try:
-            # Get user input
-            prompt = Prompt.ask("\n[bold blue]Tú[/bold blue]")
+            # Intenta importar y usar el cliente de Supabase
+            from src.db.supabase_client import supabase
 
-            # Check for exit command
-            if prompt.lower() == "exit":
-                console.print(
-                    Panel(
-                        "[bold green]¡Gracias por usar nuestro servicio! ¡Que tengas un excelente día![/bold green]",
-                        border_style="green",
-                    )
-                )
-                break
-
-            # Display user message
-            await display_user_message(prompt)
-
-            # Show processing message with spinner
-            with console.status(
-                "[bold blue]Procesando tu solicitud...[/bold blue]", spinner="dots"
-            ):
-                result = await agents.run(prompt, context)
-
-            # Display agent response
-            await display_agent_response(result)
-
-        except KeyboardInterrupt:
-            console.print(
-                "\n[bold red]Interrumpido por el usuario. Saliendo...[/bold red]"
+            start_time = datetime.now().timestamp()
+            response = (
+                supabase.table("productos").select("count", count="exact").execute()
             )
-            break
+            elapsed = datetime.now().timestamp() - start_time
+
+            count = response.count if hasattr(response, "count") else len(response.data)
+
+            console.print(
+                Panel(
+                    f"[bold green]✅ Conectado correctamente[/bold green]\n"
+                    + f"[dim]Latencia: {elapsed * 1000:.2f}ms[/dim]\n"
+                    + f"[dim]Registros: {count} productos[/dim]",
+                    title="ESTADO DE LA BASE DE DATOS",
+                    border_style="green",
+                    expand=False,
+                )
+            )
         except Exception as e:
             console.print(
                 Panel(
-                    f"[bold red]Error: {str(e)}[/bold red]",
-                    title="[bold red]Error[/bold red]",
-                    border_style="red",
+                    f"[bold yellow]⚠️ No se pudo verificar la base de datos[/bold yellow]\n"
+                    + f"[dim]Error: {str(e)}[/dim]",
+                    title="ESTADO DE LA BASE DE DATOS",
+                    border_style="yellow",
+                    expand=False,
                 )
             )
+
+        console.print("─" * 80 + "\n")
+    except Exception as e:
+        console.print(
+            Panel(
+                f"[bold red]Error al comprobar estado: {str(e)}[/bold red]\n{traceback.format_exc()}",
+                title="ERROR DE BASE DE DATOS",
+                border_style="red",
+                expand=False,
+            )
+        )
+
+
+async def main():
+    console.print(
+        Panel(
+            "Sistema de ordenamiento y pagos con agentes de IA",
+            title="SISTEMA INICIADO",
+            border_style="green",
+            expand=False,
+        )
+    )
+
+    await show_database_status()
+
+    agents = Agents()
+    context = ChatContext()
+    console.print(f"[bold blue]Contexto creado con ID:[/] {context.uid}")
+
+    while True:
+        query = input("Your: ")
+
+        if query.lower() == "exit":
+            break
+
+        if query.lower() == "debug":
+            # Comando especial para mostrar estado actual
+            console.print(
+                Panel(
+                    f"Mensajes en contexto: {len(context.get_messages())}\n"
+                    + f"Items en orden: {list(context.current_order.keys()) if context.current_order else 'Ninguno'}",
+                    title="ESTADO DEL CONTEXTO",
+                    border_style="yellow",
+                    expand=False,
+                )
+            )
+            continue
+
+        if query.lower() == "db-status":
+            # Comando especial para verificar estado de la base de datos
+            await show_database_status()
+            continue
+
+        # Procesar la consulta normal
+        response = await agents.run(query, context=context)
+        print(f"\nAgent: {response}")
 
 
 if __name__ == "__main__":
