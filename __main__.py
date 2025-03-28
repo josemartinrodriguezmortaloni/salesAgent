@@ -20,6 +20,38 @@ console = Console()
 load_dotenv()
 
 
+async def show_menu():
+    """Muestra el menú de productos disponibles como carta de restaurante"""
+    console.print("\n" + "━" * 80)
+    console.print("[bold cyan]🍕 NUESTRO MENÚ DE PIZZAS[/]")
+
+    try:
+        response = supabase.table("productos").select("*").execute()
+        products = response.data
+
+        # Crear tabla para el menú
+        table = Table(title="CARTA DEL RESTAURANTE")
+        table.add_column("🍕 Variedad", style="cyan")
+        table.add_column("💲 Precio", style="green")
+        table.add_column("🏷️ Marca", style="yellow")
+
+        # Ordenar productos por precio
+        products = sorted(products, key=lambda x: x["precio"])
+
+        # Agregar los productos al menú
+        for p in products:
+            table.add_row(p["nombre"], f"${p['precio']}", p["marca"])
+
+        console.print(table)
+        console.print(
+            "\n[bold cyan]¡Haz tu pedido ahora! Simplemente escribe qué pizza deseas ordenar.[/]"
+        )
+        console.print("━" * 80 + "\n")
+
+    except Exception as e:
+        console.print(f"[bold red]❌ Error al cargar el menú: {str(e)}[/]")
+
+
 async def show_database_status():
     """Muestra el estado actual de la conexión a la base de datos y los productos disponibles"""
     console.print("\n" + "━" * 80)
@@ -68,27 +100,45 @@ async def main():
 
     await show_database_status()
 
+    # Mostrar el menú de productos
+    await show_menu()
+
     agents = Agents()
+    # Opciones:
+    # 1. context = None - Usará el nuevo formato de diccionario
+    # 2. context = ChatContext() - Usará el formato original de objeto
+    # Elegimos usar el formato original para compatibilidad
     context = ChatContext()
-    console.print(f"[bold blue]Contexto creado con ID:[/] {context.uid}")
 
     while True:
-        query = input("Your: ")
+        query = input("\nTu pedido 🍕 > ")
 
         if query.lower() == "exit":
             break
 
         if query.lower() == "debug":
             # Comando especial para mostrar estado actual
-            console.print(
-                Panel(
-                    f"Mensajes en contexto: {len(context.get_messages())}\n"
-                    + f"Items en orden: {list(context.current_order.keys()) if context.current_order else 'Ninguno'}",
-                    title="ESTADO DEL CONTEXTO",
-                    border_style="yellow",
-                    expand=False,
+            if hasattr(context, "get_messages"):
+                console.print(
+                    Panel(
+                        f"Mensajes en contexto: {len(context.get_messages())}\n"
+                        + f"Items en orden: {list(context.current_order.keys()) if context.current_order else 'Ninguno'}",
+                        title="ESTADO DEL CONTEXTO",
+                        border_style="yellow",
+                        expand=False,
+                    )
                 )
-            )
+            elif context and "messages" in context:
+                console.print(
+                    Panel(
+                        f"Mensajes en contexto: {len(context['messages'])}",
+                        title="ESTADO DEL CONTEXTO",
+                        border_style="yellow",
+                        expand=False,
+                    )
+                )
+            else:
+                console.print("[yellow]No hay contexto activo todavía[/]")
             continue
 
         if query.lower() == "db-status":
@@ -96,9 +146,18 @@ async def main():
             await show_database_status()
             continue
 
+        if query.lower() == "menu":
+            await show_menu()
+            continue
+
         # Procesar la consulta normal
-        response = await agents.run(query, context=context)
-        print(f"\nAgent: {response}")
+        try:
+            response = await agents.run(query, context=context)
+        except Exception as e:
+            console.print(
+                f"[bold red]Error al procesar la consulta: {str(e)}[/]", highlight=False
+            )
+            traceback.print_exc()
 
 
 if __name__ == "__main__":

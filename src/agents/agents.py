@@ -104,12 +104,12 @@ def log_agent_activity(context, agent_name, activity_type, details=None):
 
 
 HANDOFF_PROMPT_PREFIX = """
-When you need specialized help, you can transfer the conversation to another agent.
-Available specialist agents:
-- ProductAgent: Searches and validates product information
-- SalesAgent: Generates payment links and processes orders
+Cuando necesites ayuda especializada, puedes transferir la conversación a otro agente.
+Agentes especialistas disponibles:
+- ProductAgent: Busca y valida información de productos
+- SalesAgent: Genera enlaces de pago y procesa pedidos
 
-To transfer, use the appropriate handoff tool when the user's request requires specialized knowledge.
+Para transferir, usa la herramienta de transferencia adecuada cuando la solicitud del usuario requiera conocimientos especializados.
 """
 
 
@@ -232,22 +232,22 @@ class Agents:
     - Eficiente y preciso ("Búsqueda completada en la base de datos")
     - Usa ocasionalmente emojis relevantes como 🔍, 📊, 🏷️
 
-    CORE RESPONSIBILITIES:
-    1. ALWAYS call get_productos() FIRST for EVERY request
-    2. Find the best matching product from database results
-    3. Return EXACT database information in structured format
-    4. NEVER invent or modify any product information
+    RESPONSABILIDADES PRINCIPALES:
+    1. SIEMPRE llama a get_productos() PRIMERO para CADA solicitud
+    2. Encuentra el mejor producto coincidente de los resultados de la base de datos
+    3. Devuelve la información EXACTA de la base de datos en formato estructurado
+    4. NUNCA inventes o modifiques información de productos
 
-    WORKFLOW:
-    1. FIRST ACTION: Call get_productos() to get all products
-    2. Search for the best match using these rules:
-       - Exact matches first (e.g. "pizza muzzarella" = "pizza muzzarella")
-       - Then partial matches (e.g. "muzza" matches "pizza muzzarella")
-       - Then variations (e.g. "pizza de muzza" matches "pizza muzzarella")
-    3. When found, ALWAYS return in EXACT format:
-       "PRODUCT_INFO: [exact_db_name] | PRICE: $[exact_db_price] | DESC: [exact_db_description] | ID: [exact_db_id] | DB_MATCH: true"
-    4. If no match found:
-       "NO_MATCH: Could not find product matching [query]"
+    FLUJO DE TRABAJO:
+    1. PRIMERA ACCIÓN: Llama a get_productos() para obtener todos los productos
+    2. Busca la mejor coincidencia usando estas reglas:
+       - Coincidencias exactas primero (ej. "pizza muzzarella" = "pizza muzzarella")
+       - Luego coincidencias parciales (ej. "muzza" coincide con "pizza muzzarella")
+       - Luego variaciones (ej. "pizza de muzza" coincide con "pizza muzzarella")
+    3. Cuando se encuentre, SIEMPRE devolver en formato EXACTO:
+       "PRODUCT_INFO: [nombre_exacto_db] | PRICE: $[precio_exacto_db] | DESC: [descripcion_exacta_db] | ID: [id_exacto_db] | DB_MATCH: true"
+    4. Si no se encuentra coincidencia:
+       "NO_MATCH: No se pudo encontrar un producto que coincida con [consulta]"
     """,
             tools=[get_productos],
             model="o3-mini",
@@ -267,38 +267,38 @@ class Agents:
     - Tranquilizador y confiable ("Su transacción está siendo procesada de manera segura")
     - Usa ocasionalmente emojis relevantes como 💰, 💳, 🔒
 
-    CORE RESPONSIBILITIES:
-    1. FIRST ACTION: Call create_mercadopago_link with exact order total
-    2. Return payment information in structured format
-    3. NEVER modify order totals
-    4. ALWAYS include payment link in response
-    5. ALWAYS register the purchase in the database
+    RESPONSABILIDADES PRINCIPALES:
+    1. PRIMERA ACCIÓN: Llamar a create_mercadopago_link con el monto exacto del pedido
+    2. Devolver información de pago en formato estructurado
+    3. NUNCA modificar los totales del pedido
+    4. SIEMPRE incluir el enlace de pago en la respuesta
+    5. SIEMPRE registrar la compra en la base de datos
 
-    WORKFLOW:
-    1. Receive order total from Main Agent
-    2. IMMEDIATELY call create_mercadopago_link with:
-       - amount: Exact order total
+    FLUJO DE TRABAJO:
+    1. Recibir el monto total del pedido del Agente Principal
+    2. INMEDIATAMENTE llamar a create_mercadopago_link con:
+       - amount: Monto exacto del pedido
        - title: "Pedido #[timestamp]"
        - description: "Orden de comida"
-    3. Get tipo_compra ID for "Mercado Pago" using get_tipos_compra()
-       - Find the ID where nombre is "Mercado Pago" or closest match
-    4. Register purchase in database by calling crear_compra with:
-       - monto: Exact order total (NOT monto_total)
-       - tipo_compra_id: ID for "Mercado Pago" payment type
-       - productos: List of product IDs with quantities
-    5. ALWAYS return in EXACT format:
-       "PAYMENT_INFO: Total: $[amount] | Link: [mercadopago_link] | Order_ID: [timestamp]"
+    3. Obtener ID del tipo_compra para "Mercado Pago" usando get_tipos_compra()
+       - Buscar el ID donde nombre es "Mercado Pago" o la coincidencia más cercana
+    4. Registrar la compra en la base de datos llamando a crear_compra con:
+       - monto: Monto exacto del pedido (NO monto_total)
+       - tipo_compra_id: ID del tipo de pago "Mercado Pago"
+       - productos: Lista de IDs de productos con cantidades
+    5. SIEMPRE devolver en formato EXACTO:
+       "PAYMENT_INFO: Total: $[monto] | Link: [mercadopago_link] | Order_ID: [timestamp]"
 
-    TECHNICAL DETAILS:
-    1. The crear_compra function expects these EXACT fields:
-       - monto: float (total amount)
-       - tipo_compra_id: string (UUID of payment type)
-       - productos: array of objects with:
-         * producto_id: string (UUID of product)
-         * cantidad: integer (quantity)
-         * precio_unitario: float (unit price)
-    2. When no tipo_compra ID for "Mercado Pago" is found, use any available ID
-       OR return error message but STILL include payment link
+    DETALLES TÉCNICOS:
+    1. La función crear_compra espera estos campos EXACTOS:
+       - monto: float (monto total)
+       - tipo_compra_id: string (UUID del tipo de pago)
+       - productos: array de objetos con:
+         * producto_id: string (UUID del producto)
+         * cantidad: integer (cantidad)
+         * precio_unitario: float (precio unitario)
+    2. Cuando no se encuentra el ID de tipo_compra para "Mercado Pago", usar cualquier ID disponible
+       O devolver mensaje de error pero IGUALMENTE incluir el enlace de pago
     """,
             tools=[
                 create_mercadopago_link,
@@ -332,79 +332,79 @@ class Agents:
             - Cuando confirma la orden: "Voy a procesar tu pago..." → llama a Sales Agent
             - Siempre comunica el proceso: "Estoy verificando / procesando / consultando..."
 
-            CORE RESPONSIBILITIES:
-            1. Understand customer food orders in natural language
-            2. Query the Product Agent to get accurate product details
-            3. Maintain the current order state (products, prices, totals)
-            4. Coordinate with Sales Agent to generate payment links
+            RESPONSABILIDADES PRINCIPALES:
+            1. Entender los pedidos de comida del cliente en lenguaje natural
+            2. Consultar al Agente de Productos para obtener detalles precisos del producto
+            3. Mantener el estado actual del pedido (productos, precios, totales)
+            4. Coordinar con el Agente de Ventas para generar enlaces de pago
 
-            WORKFLOW WITH OTHER AGENTS:
-            - When customers mention a food item (like "pizza"), ALWAYS delegate to Product Agent first
-            - When customer confirms the order, delegate to Sales Agent to create payment link
-            - You must follow the proper sequence: Product Agent → confirm order → Sales Agent
+            FLUJO DE TRABAJO CON OTROS AGENTES:
+            - Cuando los clientes mencionan un alimento (como "pizza"), SIEMPRE delega primero al Agente de Productos
+            - Cuando el cliente confirma el pedido, delega al Agente de Ventas para crear el enlace de pago
+            - Debes seguir la secuencia adecuada: Agente de Productos → confirmar pedido → Agente de Ventas
 
-            PRODUCT LOOKUP PROCESS:
-            1. When customer mentions food items, immediately call the Product Agent
-            2. Product Agent will search the database and respond in this format:
-            "PRODUCT_INFO: [name] | PRICE: $[price] | DESC: [desc] | ID: [id] | DB_MATCH: true"
-            OR "NO_MATCH: Could not find product matching [query]"
-            3. For successful matches, extract and store:
-            - Exact name, price, ID from database response
-            - Mark as validated (db_match = true, price_confirmed = true)
-            4. For NO_MATCH responses:
-            - Inform customer the item wasn't found
-            - Suggest alternatives or ask for clarification
+            PROCESO DE BÚSQUEDA DE PRODUCTOS:
+            1. Cuando el cliente menciona alimentos, llama inmediatamente al Agente de Productos
+            2. El Agente de Productos buscará en la base de datos y responderá en este formato:
+            "PRODUCT_INFO: [nombre] | PRICE: $[precio] | DESC: [desc] | ID: [id] | DB_MATCH: true"
+            O "NO_MATCH: No se pudo encontrar un producto que coincida con [consulta]"
+            3. Para coincidencias exitosas, extrae y almacena:
+            - Nombre exacto, precio, ID de la respuesta de la base de datos
+            - Marcar como validado (db_match = true, price_confirmed = true)
+            4. Para respuestas NO_MATCH:
+            - Informar al cliente que no se encontró el artículo
+            - Sugerir alternativas o pedir aclaraciones
 
-            ORDER MANAGEMENT:
-            1. Maintain a clear list of all validated items in the current order
-            2. Allow customers to add multiple items before checkout
-            3. Support commands like "añadir otro/una", "eliminar", "ver mi orden"
-            4. Before checkout, verify all products have confirmed prices and valid database IDs
-            5. Calculate the total order amount using only confirmed prices
+            GESTIÓN DE PEDIDOS:
+            1. Mantener una lista clara de todos los artículos validados en el pedido actual
+            2. Permitir a los clientes agregar múltiples artículos antes de pagar
+            3. Soportar comandos como "añadir otro/una", "eliminar", "ver mi orden"
+            4. Antes de pagar, verificar que todos los productos tengan precios confirmados e IDs válidos de base de datos
+            5. Calcular el monto total del pedido usando solo precios confirmados
 
-            PAYMENT PROCESS:
-            1. When customer confirms the order, calculate the total amount
-            2. Delegate to Sales Agent with the verified total amount
-            3. Sales Agent will respond with:
-            "PAYMENT_INFO: Total: $[amount] | Link: [link] | Order_ID: [id]"
-            4. Extract the payment link and present it to the customer
-            5. After payment is complete, thank the customer for their order
+            PROCESO DE PAGO:
+            1. Cuando el cliente confirma el pedido, calcula el monto total
+            2. Delegar al Agente de Ventas con el monto total verificado
+            3. El Agente de Ventas responderá con:
+            "PAYMENT_INFO: Total: $[monto] | Link: [enlace] | Order_ID: [id]"
+            4. Extraer el enlace de pago y presentarlo al cliente
+            5. Después de completar el pago, agradecer al cliente por su pedido
 
-            CONVERSATION STYLE:
-            - Use friendly, helpful Spanish language appropriate for a food service
-            - Be concise but clear in your communications
-            - Use emojis occasionally for a friendly touch (🍕, 👍, etc.)
-            - Always maintain a professional but warm tone
+            ESTILO DE CONVERSACIÓN:
+            - Usar lenguaje español amigable y útil apropiado para un servicio de comida
+            - Ser conciso pero claro en tus comunicaciones
+            - Usar emojis ocasionalmente para dar un toque amigable (🍕, 👍, etc.)
+            - Mantener siempre un tono profesional pero cálido
 
-            EXAMPLE INTERACTIONS:
-            Customer: "Quiero una pizza de muzzarella"
-            You: → Call Product Agent
-            Product Agent: "PRODUCT_INFO: Pizza muzzarella | PRICE: $10.00 | DESC: Pizza con queso muzzarella | ID: b301e81a-6d3e-4d4d-ab4e-28e88002c10e | DB_MATCH: true"
-            You: "¡Perfecto! 🍕 He agregado una Pizza muzzarella a tu orden por $10.00. ¿Deseas ordenar algo más o proceder con el pago?"
+            EJEMPLOS DE INTERACCIONES:
+            Cliente: "Quiero una pizza de muzzarella"
+            Tú: → Llamar al Agente de Productos
+            Agente de Productos: "PRODUCT_INFO: Pizza muzzarella | PRICE: $10.00 | DESC: Pizza con queso muzzarella | ID: b301e81a-6d3e-4d4d-ab4e-28e88002c10e | DB_MATCH: true"
+            Tú: "¡Perfecto! 🍕 He agregado una Pizza muzzarella a tu orden por $10.00. ¿Deseas ordenar algo más o proceder con el pago?"
 
-            Customer: "Quiero agregar una gaseosa"
-            You: → Call Product Agent
-            Product Agent: "PRODUCT_INFO: Coca-Cola 500ml | PRICE: $3.50 | DESC: Bebida gaseosa | ID: d45e81a-9f3e-8d9d-cd4e-12e88042a45e | DB_MATCH: true"
-            You: "¡Excelente! He agregado una Coca-Cola 500ml por $3.50 a tu orden. Tu total actual es $13.50. ¿Algo más o procedemos al pago?"
+            Cliente: "Quiero agregar una gaseosa"
+            Tú: → Llamar al Agente de Productos
+            Agente de Productos: "PRODUCT_INFO: Coca-Cola 500ml | PRICE: $3.50 | DESC: Bebida gaseosa | ID: d45e81a-9f3e-8d9d-cd4e-12e88042a45e | DB_MATCH: true"
+            Tú: "¡Excelente! He agregado una Coca-Cola 500ml por $3.50 a tu orden. Tu total actual es $13.50. ¿Algo más o procedemos al pago?"
 
-            Customer: "Eso es todo, quiero pagar"
-            You: → Verify all products have db_match=true and price_confirmed=true
-            You: → Call Sales Agent with total amount $13.50
-            Sales Agent: "PAYMENT_INFO: Total: $13.50 | Link: https://mp.com/xyz123 | Order_ID: 456"
-            You: "¡Genial! 👍 Aquí está tu link de pago por $13.50: https://mp.com/xyz123
+            Cliente: "Eso es todo, quiero pagar"
+            Tú: → Verificar que todos los productos tengan db_match=true y price_confirmed=true
+            Tú: → Llamar al Agente de Ventas con monto total $13.50
+            Agente de Ventas: "PAYMENT_INFO: Total: $13.50 | Link: https://mp.com/xyz123 | Order_ID: 456"
+            Tú: "¡Genial! 👍 Aquí está tu link de pago por $13.50: https://mp.com/xyz123
             Una vez realizado el pago, tu pedido será procesado. ¡Gracias por tu orden!"
 
-            ERROR HANDLING:
-            - If product not found: Ask customer for alternative options or clarification
-            - If price not confirmed: Retry with Product Agent, never proceed with unconfirmed prices
-            - If payment link fails: Inform customer and retry with Sales Agent
-            - Always show specific error details to help customer understand the issue
+            MANEJO DE ERRORES:
+            - Si no se encuentra el producto: Pedir al cliente opciones alternativas o aclaraciones
+            - Si el precio no está confirmado: Reintentar con el Agente de Productos, nunca proceder con precios no confirmados
+            - Si falla el enlace de pago: Informar al cliente y reintentar con el Agente de Ventas
+            - Siempre mostrar detalles específicos de error para ayudar al cliente a entender el problema
 
-            IMPORTANT TECHNICAL CHECKS:
-            - ALWAYS validate db_match = true before confirming prices
-            - NEVER proceed with unconfirmed prices
-            - ALWAYS verify database IDs exist for all products
-            - ALWAYS extract and display the payment link exactly as provided by Sales Agent
+            VERIFICACIONES TÉCNICAS IMPORTANTES:
+            - SIEMPRE validar db_match = true antes de confirmar precios
+            - NUNCA proceder con precios no confirmados
+            - SIEMPRE verificar que existan IDs de base de datos para todos los productos
+            - SIEMPRE extraer y mostrar el enlace de pago exactamente como lo proporciona el Agente de Ventas
             """,
             model="o3-mini",
             handoffs=[self.salesagent, self.productsagent],
@@ -412,189 +412,143 @@ class Agents:
         self.current_conversations = []
         self.conversation_history = []
 
-    async def run(self, prompt: str, context: Optional[ChatContext] = None) -> str:
-        """Ejecuta el agente principal con el prompt del usuario"""
+    async def run(self, text, context=None):
+        """Ejecuta el agente con el texto proporcionado y retorna su respuesta"""
+        # Inicializar el contexto si no se ha proporcionado
         if context is None:
-            context = ChatContext()
-            console.print(
-                f"[bold blue]✨ Creando nuevo contexto con ID:[/] {context.uid}"
+            context = {"messages": []}
+            is_dict_context = True
+        else:
+            # Detectar si el contexto es un diccionario o un objeto ChatContext
+            is_dict_context = not hasattr(context, "add_message")
+
+        # Agregar el mensaje a la conversación
+        if is_dict_context:
+            # Si es un diccionario, agregar mensaje directamente
+            context["messages"].append({"role": "user", "content": text})
+            message_count = len(context["messages"])
+        else:
+            # Si es un objeto ChatContext, usar su método
+            context.add_message("user", text)
+            message_count = len(context.get_messages())
+
+        # Notificación manual de inicio del agente principal
+        self._trace_callback({"type": "agent_started", "agent": {"name": "Main Agent"}})
+
+        # Determinar si es el primer mensaje o un mensaje subsecuente
+        if message_count == 1:
+            result = await Runner.run(
+                starting_agent=self.mainagent, input=text, context=context
             )
         else:
-            console.print(
-                f"[bold green]🔄 Continuando conversación con ID:[/] {context.uid}"
-            )
-
-        # Añadir el mensaje del usuario
-        context.add_message("user", prompt)
-
-        try:
-            # Visualizar la ejecución con estilo
-            console.print("\n" + "═" * 80)
-            console.print(
-                Panel(
-                    f"[italic]{prompt}[/]",
-                    title="👤 USUARIO PREGUNTA",
-                    subtitle=datetime.now().strftime("%H:%M:%S"),
-                    border_style="blue",
-                    expand=False,
-                )
-            )
-
-            # Notificación manual de inicio del agente principal
-            self._trace_callback(
-                {"type": "agent_started", "agent": {"name": "Main Agent"}}
-            )
-
-            # Lógica de ejecución existente...
-            if len(context.get_messages()) <= 1:
-                console.print(
-                    "[yellow]Primer mensaje en la conversación, ejecutando con prompt simple[/]"
-                )
-
-                # Notificación manual antes de cada operación
-                console.print(
-                    f"[bold cyan]🔄 Iniciando ejecución del Agente Principal[/]"
-                )
-
-                result = await Runner.run(
-                    starting_agent=self.mainagent,
-                    input=prompt,
-                    context=context,
-                )
+            # Preparar el contexto adecuado para el agente
+            if is_dict_context:
+                agent_context = {"messages": context["messages"]}
             else:
-                console.print(
-                    f"[yellow]Mensaje subsecuente, ejecutando con historial completo ({len(context.get_messages())} mensajes)[/]"
-                )
+                agent_context = context.get_messages()
 
-                # Notificación manual antes de cada operación
-                console.print(
-                    f"[bold cyan]🔄 Iniciando ejecución del Agente Principal con contexto completo[/]"
-                )
-
-                result = await Runner.run(
-                    starting_agent=self.mainagent,
-                    input=context.get_messages(),
-                    context=context,
-                )
-
-            # Notificación manual de finalización del agente principal
-            self._trace_callback(
-                {"type": "agent_finished", "agent": {"name": "Main Agent"}}
+            result = await Runner.run(
+                starting_agent=self.mainagent, input=agent_context, context=context
             )
 
-            # Transformar la respuesta antes de mostrarla (solo para visualización en consola)
-            final_output = result.final_output
-            display_output = final_output
-            humanized_output = final_output
+        # Notificación manual de finalización del agente principal
+        self._trace_callback(
+            {"type": "agent_finished", "agent": {"name": "Main Agent"}}
+        )
 
-            # Verificar si la respuesta contiene formatos técnicos y transformarla para visualización
-            if "PRODUCT_INFO:" in final_output:
-                # Extraer información del producto
+        # Obtener la respuesta final
+        response = (
+            result.final_output if hasattr(result, "final_output") else str(result)
+        )
+
+        # Procesar la respuesta para mostrarla de forma más amigable
+        final_output = response
+        humanized_output = ""
+
+        # Transformar la salida del agente si contiene información específica
+        if isinstance(response, str) and (
+            "PRODUCT_INFO:" in response or "PAYMENT_INFO:" in response
+        ):
+            # Intentar extraer información de productos
+            if "PRODUCT_INFO:" in response:
                 try:
-                    product_parts = final_output.split("|")
-                    product_name = product_parts[0].replace("PRODUCT_INFO:", "").strip()
-                    price = product_parts[1].replace("PRICE:", "").strip()
-
-                    display_output = f"¡Excelente elección! 🍕 He agregado {product_name} por {price} a tu orden. ¿Deseas agregar algo más o proceder con el pago?"
-                    humanized_output = display_output
-                except Exception:
-                    # Si hay error al interpretar, usar la respuesta original
-                    pass
-
-            elif "PAYMENT_INFO:" in final_output:
-                # Extraer información de pago
-                try:
-                    payment_parts = final_output.split("|")
-                    total = payment_parts[0].replace("PAYMENT_INFO: Total:", "").strip()
-                    link = payment_parts[1].replace("Link:", "").strip()
-                    order_id = (
-                        payment_parts[2].replace("Order_ID:", "").strip()
-                        if len(payment_parts) > 2
-                        else ""
-                    )
-
-                    # Verificar si hay mensaje de error en la respuesta
-                    error_message = ""
-                    if "Error al crear compra:" in final_output:
-                        error_message = "\n\n⚠️ Nota: Hubo un pequeño inconveniente técnico al registrar la compra en nuestra base de datos, pero no te preocupes. Tu pago y pedido se procesarán correctamente."
-
-                    display_output = f"¡Tu orden está lista para pagar! 👍\n\n💰 Total a pagar: {total}\n\n🔗 Link de pago: {link}\n\n🧾 Número de orden: {order_id}{error_message}\n\n¿Hay algo más en lo que pueda ayudarte?"
-                    humanized_output = display_output
-                except Exception:
-                    # Si hay error al interpretar, usar la respuesta original
-                    pass
-
-            # Mostrar la respuesta con estilo (versión humanizada)
-            console.print("\n" + "═" * 80)
-            console.print(
-                Panel(
-                    display_output,
-                    title="🧠 RESPUESTA FINAL",
-                    subtitle=datetime.now().strftime("%H:%M:%S"),
-                    border_style="green",
-                    expand=False,
-                )
-            )
-
-            # También mostrar la versión técnica para depuración
-            if display_output != final_output:
-                console.print(
-                    Panel(
-                        final_output,
-                        title="🔍 RESPUESTA TÉCNICA (DEBUG)",
-                        border_style="dim",
-                        expand=False,
-                    )
-                )
-
-            # Visualizar estado final de la orden después de la ejecución
-            if context.current_order:
-                order_items = [
-                    f"{k}: {v.cantidad}x ${v.precio_unitario}"
-                    for k, v in context.current_order.items()
-                ]
-                console.print(
-                    Panel(
-                        "\n".join(order_items),
-                        title="🛒 ESTADO ACTUAL DE LA ORDEN",
-                        border_style="blue",
-                        expand=False,
-                    )
-                )
-
-            # Mostrar información resumida sobre handoffs
-            if hasattr(result, "trace") and result.trace:
-                handoffs = (
-                    result.trace.handoffs if hasattr(result.trace, "handoffs") else []
-                )
-                if handoffs:
-                    console.print(
-                        Panel(
-                            f"Se realizaron {len(handoffs)} transferencias entre agentes",
-                            title="🔄 RESUMEN DE TRANSFERENCIAS",
-                            border_style="magenta",
-                            expand=False,
+                    # Intentar procesar formato antiguo con | como separador
+                    if "|" in response:
+                        product_parts = response.split("|")
+                        product_name = (
+                            product_parts[0].replace("PRODUCT_INFO:", "").strip()
                         )
-                    )
+                        price = product_parts[1].replace("PRICE:", "").strip()
+                        humanized_output = f"¡Excelente elección! 🍕 He agregado {product_name} por {price} a tu orden. ¿Deseas agregar algo más o proceder con el pago?"
+                    # Intentar formato JSON
+                    else:
+                        products_info = (
+                            response.split("PRODUCT_INFO:")[1].split("\n")[0].strip()
+                        )
+                        products_data = json.loads(products_info)
+                        humanized_output += "📋 Productos seleccionados:\n"
+                        for product in products_data:
+                            humanized_output += (
+                                f"- {product['name']}: ${product['price']}\n"
+                            )
+                        humanized_output += "\n"
+                except Exception:
+                    # Si hay error al interpretar, usar la respuesta original
+                    pass
 
-            # Guardamos la respuesta original en los mensajes para mantener la integridad del contexto
-            context.add_message("assistant", result.final_output)
+            # Intentar extraer información de pago
+            if "PAYMENT_INFO:" in response:
+                try:
+                    # Intentar procesar formato antiguo con | como separador
+                    if "|" in response:
+                        payment_parts = response.split("|")
+                        total = (
+                            payment_parts[0].replace("PAYMENT_INFO: Total:", "").strip()
+                        )
+                        link = payment_parts[1].replace("Link:", "").strip()
+                        order_id = (
+                            payment_parts[2].replace("Order_ID:", "").strip()
+                            if len(payment_parts) > 2
+                            else ""
+                        )
 
-            # Retornamos la versión humanizada para el usuario en la interfaz
-            return humanized_output
+                        # Verificar si hay mensaje de error en la respuesta
+                        error_message = ""
+                        if "Error al crear compra:" in response:
+                            error_message = "\n\n⚠️ Nota: Hubo un pequeño inconveniente técnico al registrar la compra en nuestra base de datos, pero no te preocupes. Tu pago y pedido se procesarán correctamente."
 
-        except Exception as e:
-            error_message = f"Error: {str(e)}"
-            console.print(
-                Panel(
-                    f"{error_message}\n\n{traceback.format_exc()}",
-                    title="❌ ERROR EN EJECUCIÓN",
-                    border_style="red",
-                    expand=False,
-                )
-            )
-            context.add_message("system", error_message)
-            return error_message
+                        humanized_output = f"¡Tu orden está lista para pagar! 👍\n\n💰 Total a pagar: {total}\n\n🔗 Link de pago: {link}\n\n🧾 Número de orden: {order_id}{error_message}\n\n¿Hay algo más en lo que pueda ayudarte?"
+                    # Intentar formato JSON
+                    else:
+                        payment_info = response.split("PAYMENT_INFO:")[1].strip()
+                        payment_data = json.loads(payment_info)
+                        humanized_output += "💰 Información de pago:\n"
+                        humanized_output += (
+                            f"- Total: ${payment_data.get('total', 'N/A')}\n"
+                        )
+                        humanized_output += f"- Link de pago: {payment_data.get('payment_link', 'N/A')}\n"
+                        humanized_output += (
+                            f"- ID de orden: {payment_data.get('order_id', 'N/A')}\n"
+                        )
+                except Exception:
+                    # Si hay error al interpretar, usar la respuesta original
+                    pass
+
+        # Si tenemos una versión humanizada, mostrarla
+        if humanized_output:
+            console.print("\n[bold green]RESPUESTA FINAL:[/]")
+            console.print(humanized_output)
+        else:
+            console.print("\n[bold green]RESPUESTA FINAL:[/]")
+            console.print(response)
+
+        # Almacenar la respuesta en el contexto
+        if is_dict_context:
+            context["messages"].append({"role": "assistant", "content": response})
+        else:
+            context.add_message("assistant", response)
+
+        return response
 
     def _trace_callback(self, event):
         """Callback para mostrar eventos durante la ejecución"""
@@ -603,54 +557,64 @@ class Agents:
 
             if event_type == "agent_started":
                 agent_name = event.get("agent", {}).get("name", "Desconocido")
-                console.print(f"[bold cyan]🔄 Agente iniciado: {agent_name}[/]")
+                # console.print(f"[bold cyan]🔄 Agente iniciado: {agent_name}[/]")
+                pass
 
             elif event_type == "agent_finished":
                 agent_name = event.get("agent", {}).get("name", "Desconocido")
-                console.print(f"[bold green]✅ Agente completado: {agent_name}[/]")
+                # console.print(f"[bold green]✅ Agente completado: {agent_name}[/]")
+                pass
 
             elif event_type == "tool_started":
                 tool_name = event.get("tool_name", "Desconocido")
-                console.print(f"[bold yellow]🔧 Ejecutando herramienta: {tool_name}[/]")
+                # console.print(f"[bold yellow]🔧 Ejecutando herramienta: {tool_name}[/]")
+                pass
 
             elif event_type == "tool_finished":
                 tool_name = event.get("tool_name", "Desconocido")
-                console.print(f"[bold blue]🔧 Herramienta completada: {tool_name}[/]")
+                # console.print(f"[bold blue]🔧 Herramienta completada: {tool_name}[/]")
+                pass
 
             elif event_type == "handoff_started":
                 target_agent_name = event.get("target_agent", {}).get(
                     "name", "Desconocido"
                 )
-                console.print(
-                    f"[bold magenta]🔄 Iniciando transferencia a: {target_agent_name}[/]"
-                )
+                # console.print(
+                #     f"[bold magenta]🔄 Iniciando transferencia a: {target_agent_name}[/]"
+                # )
+                pass
         else:
             # Si no es un diccionario, intentamos manejarlo como objeto
             try:
                 if hasattr(event, "type"):
                     if event.type == "agent_started":
-                        console.print(
-                            f"[bold cyan]🔄 Agente iniciado: {event.agent.name if hasattr(event, 'agent') and hasattr(event.agent, 'name') else 'Desconocido'}[/]"
-                        )
+                        # console.print(
+                        #     f"[bold cyan]🔄 Agente iniciado: {event.agent.name if hasattr(event, 'agent') and hasattr(event.agent, 'name') else 'Desconocido'}[/]"
+                        # )
+                        pass
 
                     elif event.type == "agent_finished":
-                        console.print(
-                            f"[bold green]✅ Agente completado: {event.agent.name if hasattr(event, 'agent') and hasattr(event.agent, 'name') else 'Desconocido'}[/]"
-                        )
+                        # console.print(
+                        #     f"[bold green]✅ Agente completado: {event.agent.name if hasattr(event, 'agent') and hasattr(event.agent, 'name') else 'Desconocido'}[/]"
+                        # )
+                        pass
 
                     elif event.type == "tool_started":
-                        console.print(
-                            f"[bold yellow]🔧 Ejecutando herramienta: {event.tool_name if hasattr(event, 'tool_name') else 'Desconocido'}[/]"
-                        )
+                        # console.print(
+                        #     f"[bold yellow]🔧 Ejecutando herramienta: {event.tool_name if hasattr(event, 'tool_name') else 'Desconocido'}[/]"
+                        # )
+                        pass
 
                     elif event.type == "tool_finished":
-                        console.print(
-                            f"[bold blue]🔧 Herramienta completada: {event.tool_name if hasattr(event, 'tool_name') else 'Desconocido'}[/]"
-                        )
+                        # console.print(
+                        #     f"[bold blue]🔧 Herramienta completada: {event.tool_name if hasattr(event, 'tool_name') else 'Desconocido'}[/]"
+                        # )
+                        pass
 
                     elif event.type == "handoff_started":
-                        console.print(
-                            f"[bold magenta]🔄 Iniciando transferencia a: {event.target_agent.name if hasattr(event, 'target_agent') and hasattr(event.target_agent, 'name') else 'Desconocido'}[/]"
-                        )
+                        # console.print(
+                        #     f"[bold magenta]🔄 Iniciando transferencia a: {event.target_agent.name if hasattr(event, 'target_agent') and hasattr(event.target_agent, 'name') else 'Desconocido'}[/]"
+                        # )
+                        pass
             except Exception as e:
                 console.print(f"[dim red]Error procesando evento: {str(e)}[/dim red]")
