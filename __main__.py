@@ -11,6 +11,9 @@ from rich.console import Console
 from rich.panel import Panel
 import traceback
 from datetime import datetime
+from rich.table import Table
+from src.db.supabase_client import supabase
+from init_db import init_database
 
 console = Console()
 
@@ -18,58 +21,42 @@ load_dotenv()
 
 
 async def show_database_status():
-    """Muestra el estado de la base de datos al iniciar la aplicación"""
+    """Muestra el estado actual de la conexión a la base de datos y los productos disponibles"""
+    console.print("\n" + "━" * 80)
+    console.print("🔍 COMPROBANDO ESTADO DE LA BASE DE DATOS")
+
     try:
-        console.print("\n" + "─" * 80)
-        console.print("[bold cyan]🗃️ COMPROBANDO ESTADO DE LA BASE DE DATOS[/bold cyan]")
+        response = supabase.table("productos").select("*").execute()
+        products = response.data
 
-        # Implementación básica temporal
-        try:
-            # Intenta importar y usar el cliente de Supabase
-            from src.db.supabase_client import supabase
+        # Crear tabla para el estado
+        table = Table(title="ESTADO DE LA BASE DE DATOS")
+        table.add_column("Estado", style="green")
+        table.add_column("Valor", style="cyan")
 
-            start_time = datetime.now().timestamp()
-            response = (
-                supabase.table("productos").select("count", count="exact").execute()
-            )
-            elapsed = datetime.now().timestamp() - start_time
+        # Añadir información a la tabla
+        table.add_row("Conectado correctamente", "✅")
+        table.add_row("Latencia", f"{response.execution_time_client:.2f}ms")
+        table.add_row("Registros", f"{len(products)} productos")
 
-            count = response.count if hasattr(response, "count") else len(response.data)
+        console.print(table)
 
-            console.print(
-                Panel(
-                    f"[bold green]✅ Conectado correctamente[/bold green]\n"
-                    + f"[dim]Latencia: {elapsed * 1000:.2f}ms[/dim]\n"
-                    + f"[dim]Registros: {count} productos[/dim]",
-                    title="ESTADO DE LA BASE DE DATOS",
-                    border_style="green",
-                    expand=False,
+        # Mostrar información detallada de los productos si hay pocos
+        if len(products) <= 5:
+            for p in products:
+                console.print(
+                    f"  └─ {p['nombre']}: ${p['precio']} (ID: {p['id']})",
+                    style="dim",
                 )
-            )
-        except Exception as e:
-            console.print(
-                Panel(
-                    f"[bold yellow]⚠️ No se pudo verificar la base de datos[/bold yellow]\n"
-                    + f"[dim]Error: {str(e)}[/dim]",
-                    title="ESTADO DE LA BASE DE DATOS",
-                    border_style="yellow",
-                    expand=False,
-                )
-            )
 
-        console.print("─" * 80 + "\n")
     except Exception as e:
-        console.print(
-            Panel(
-                f"[bold red]Error al comprobar estado: {str(e)}[/bold red]\n{traceback.format_exc()}",
-                title="ERROR DE BASE DE DATOS",
-                border_style="red",
-                expand=False,
-            )
-        )
+        console.print(f"[bold red]❌ Error al conectar con Supabase: {str(e)}[/]")
 
 
 async def main():
+    # Inicializar la base de datos con datos necesarios
+    await init_database()
+
     console.print(
         Panel(
             "Sistema de ordenamiento y pagos con agentes de IA",

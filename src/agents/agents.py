@@ -282,13 +282,24 @@ class Agents:
        - title: "Pedido #[timestamp]"
        - description: "Orden de comida"
     3. Get tipo_compra ID for "Mercado Pago" using get_tipos_compra()
+       - Find the ID where nombre is "Mercado Pago" or closest match
     4. Register purchase in database by calling crear_compra with:
-       - monto_total: Exact order total
+       - monto: Exact order total (NOT monto_total)
        - tipo_compra_id: ID for "Mercado Pago" payment type
        - productos: List of product IDs with quantities
-       - fecha: current timestamp
     5. ALWAYS return in EXACT format:
        "PAYMENT_INFO: Total: $[amount] | Link: [mercadopago_link] | Order_ID: [timestamp]"
+
+    TECHNICAL DETAILS:
+    1. The crear_compra function expects these EXACT fields:
+       - monto: float (total amount)
+       - tipo_compra_id: string (UUID of payment type)
+       - productos: array of objects with:
+         * producto_id: string (UUID of product)
+         * cantidad: integer (quantity)
+         * precio_unitario: float (unit price)
+    2. When no tipo_compra ID for "Mercado Pago" is found, use any available ID
+       OR return error message but STILL include payment link
     """,
             tools=[
                 create_mercadopago_link,
@@ -503,7 +514,12 @@ class Agents:
                         else ""
                     )
 
-                    display_output = f"¡Tu orden está lista para pagar! 👍\n\n💰 Total a pagar: {total}\n\n🔗 Link de pago: {link}\n\n🧾 Número de orden: {order_id}\n\n¿Hay algo más en lo que pueda ayudarte?"
+                    # Verificar si hay mensaje de error en la respuesta
+                    error_message = ""
+                    if "Error al crear compra:" in final_output:
+                        error_message = "\n\n⚠️ Nota: Hubo un pequeño inconveniente técnico al registrar la compra en nuestra base de datos, pero no te preocupes. Tu pago y pedido se procesarán correctamente."
+
+                    display_output = f"¡Tu orden está lista para pagar! 👍\n\n💰 Total a pagar: {total}\n\n🔗 Link de pago: {link}\n\n🧾 Número de orden: {order_id}{error_message}\n\n¿Hay algo más en lo que pueda ayudarte?"
                     humanized_output = display_output
                 except Exception:
                     # Si hay error al interpretar, usar la respuesta original

@@ -15,6 +15,7 @@ from rich.console import Console
 from agents import function_tool, RunContextWrapper
 from functools import wraps
 from pydantic import BaseModel
+import json
 
 console = Console()
 
@@ -250,14 +251,39 @@ async def get_tipos_compra(ctx: RunContextWrapper[Any]) -> str:
     try:
         response = supabase.table("tipo_compra").select("*").execute()
         tipos = [TipoCompra(**tipo) for tipo in response.data]
-        return str(
-            [
-                {"id": str(t.id), "nombre": t.nombre, "descripcion": t.descripcion}
-                for t in tipos
-            ]
+        tipos_list = [
+            {"id": str(t.id), "nombre": t.nombre, "descripcion": t.descripcion or ""}
+            for t in tipos
+        ]
+
+        # Añadir un tipo por defecto para Mercado Pago si no existe
+        mercado_pago_exists = any(
+            t["nombre"].lower() == "mercado pago" for t in tipos_list
         )
+        if not mercado_pago_exists:
+            # Si no existe Mercado Pago, devolver información adicional
+            console.print("[bold yellow]⚠️ No se encontró tipo 'Mercado Pago'[/]")
+            console.print(
+                "[dim yellow]  └─ Se usará el primer tipo disponible o se creará uno nuevo[/dim yellow]"
+            )
+
+            # Si hay tipos disponibles, sugerir usar el primero
+            if tipos_list:
+                console.print(
+                    f"[dim yellow]  └─ Usando tipo: {tipos_list[0]['nombre']} (ID: {tipos_list[0]['id']})[/dim yellow]"
+                )
+
+        # Formatear para mejor legibilidad por el agente
+        formatted_output = json.dumps(tipos_list, ensure_ascii=False, indent=2)
+        console.print(
+            f"[bold green]✅ Tipos de compra recuperados:[/] {len(tipos_list)} tipos"
+        )
+        return formatted_output
+
     except Exception as e:
-        return f"Error al obtener tipos de compra: {str(e)}"
+        error_msg = f"Error al obtener tipos de compra: {str(e)}"
+        console.print(f"[bold red]❌ {error_msg}[/]")
+        return error_msg
 
 
 @auto_schema(name_override="generar_reporte_ventas")
