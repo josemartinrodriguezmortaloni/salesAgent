@@ -2,7 +2,50 @@
 
 An intelligent sales agent system built with Python that handles customer interactions, processes orders, and manages sales transactions. The system adapts to the customer's language and provides a seamless sales experience.
 
-## Features
+## 🎥 Demo
+
+Watch our demo video showcasing the Sales Agent in action:
+
+[![Sales Agent Demo](docs/demo.mp4)](docs/demo.mp4)
+
+## 🚀 Quick Start
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/josemartinrodriguezmortaloni/salesAgent.git
+cd salesAgent
+```
+
+2. Create a virtual environment:
+
+```bash
+uv venv
+source .venv/bin/activate  # On Windows: .\.venv\Scripts\activate
+
+```
+
+3. Install dependencies:
+
+```bash
+uv sync
+```
+
+4. Create a `.env` file with your configuration:
+
+```env
+OPENAI_API_KEY=your_api_key_here
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+```
+
+5. Run the application:
+
+```bash
+uv run .
+```
+
+## ✨ Features
 
 ### 🤖 Intelligent Agents
 
@@ -32,7 +75,7 @@ An intelligent sales agent system built with Python that handles customer intera
 - Remembers customer preferences and order history
 - Automatic cleanup of old contexts to optimize performance
 
-## Dependencies
+## 📦 Dependencies
 
 ```txt
 - openai-agents v0.0.5+: AI agent capabilities
@@ -44,43 +87,7 @@ An intelligent sales agent system built with Python that handles customer intera
 - supabase v2.14.0+: Database management
 ```
 
-## Setup
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/josemartinrodriguezmortaloni/salesAgent.git
-cd salesAgent
-```
-
-2. Create a virtual environment:
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-4. Create a `.env` file with your configuration:
-
-```env
-OPENAI_API_KEY=your_api_key_here
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
-```
-
-5. Run the application:
-
-```bash
-python __main__.py
-```
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 salesAgent/
@@ -94,11 +101,12 @@ salesAgent/
 │       ├── database.py # Database functions
 │       ├── models.py   # Data models
 │       └── supabase_client.py # Supabase configuration
+├── docs/              # Documentation and demos
 ├── requirements.txt    # Project dependencies
 └── README.md          # Project documentation
 ```
 
-## Usage Examples
+## 💡 Usage Examples
 
 ```python
 # Initialize the chat context
@@ -113,7 +121,7 @@ response = await agents.run("I want to buy 2 pizzas", context)
 # Agent responds in English: "Sure! I've added 2 pizzas to your order..."
 ```
 
-## Features in Development
+## 🚧 Features in Development
 
 - [ ] Enhanced product recommendations
 - [ ] Integration with more payment providers
@@ -121,7 +129,7 @@ response = await agents.run("I want to buy 2 pizzas", context)
 - [ ] Customer loyalty system
 - [ ] Multi-channel support
 
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
@@ -129,11 +137,11 @@ response = await agents.run("I want to buy 2 pizzas", context)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 - OpenAI for providing the AI capabilities
 - Supabase for database infrastructure
