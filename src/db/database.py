@@ -4,12 +4,12 @@ import time
 import traceback
 from .supabase_client import supabase
 from .models import (
-    Producto,
-    Compra,
-    TipoCompra,
-    ProductoInput,
-    CompraInput,
-    ReporteVentasInput,
+    Product,
+    Purchase,
+    PurchaseType,
+    ProductInput,
+    PurchaseInput,
+    SalesReportInput,
 )
 from rich.console import Console
 from agents import function_tool, RunContextWrapper
@@ -21,27 +21,25 @@ console = Console()
 
 
 # --- Pydantic Models for Function Parameters --- #
-class ProductoCompra(BaseModel):
-    """Modelo para los productos en una compra."""
+class PurchaseProduct(BaseModel):
+    """Model for products in a purchase."""
 
-    producto_id: str
-    cantidad: int
-    precio_unitario: float
+    product_id: str
+    quantity: int
+    unit_price: float
 
 
 def db_tracer(func):
-    """Decorador que registra y visualiza operaciones de base de datos."""
+    """Decorator that logs and visualizes database operations."""
 
     @wraps(func)
     async def wrapper(*args, **kwargs):
         operation_name = func.__name__
         start_time = time.time()
 
-        # Mostrar inicio de operación
-        console.print(f"\n[bold cyan]🗃️ DB OPERATION:[/] Iniciando {operation_name}")
+        console.print(f"\n[bold cyan]🗃️ DB OPERATION:[/] Starting {operation_name}")
 
         try:
-            # Obtener parámetros relevantes para logging (sin exponer datos sensibles)
             params_str = ", ".join(
                 [
                     f"{k}={v}"
@@ -50,49 +48,42 @@ def db_tracer(func):
                 ]
             )
             if params_str:
-                console.print(f"[dim cyan]  └─ Parámetros: {params_str}[/dim cyan]")
+                console.print(f"[dim cyan]  └─ Parameters: {params_str}[/dim cyan]")
 
-            # Ejecutar la operación
             result = await func(*args, **kwargs)
 
-            # Calcular tiempo transcurrido
             elapsed = time.time() - start_time
 
-            # Mostrar éxito
             console.print(
-                f"[bold green]✅ DB SUCCESS:[/] {operation_name} completado en {elapsed:.3f}s"
+                f"[bold green]✅ DB SUCCESS:[/] {operation_name} completed in {elapsed:.3f}s"
             )
 
-            # Mostrar vista previa del resultado
             if result and isinstance(result, str):
                 preview = result[:150] + "..." if len(result) > 150 else result
-                console.print(f"[dim green]  └─ Resultado: {preview}[/dim green]")
+                console.print(f"[dim green]  └─ Result: {preview}[/dim green]")
 
             return result
         except Exception as e:
-            # Calcular tiempo hasta el error
             elapsed = time.time() - start_time
 
-            # Mostrar error
             console.print(
-                f"[bold red]❌ DB ERROR:[/] {operation_name} falló en {elapsed:.3f}s: {str(e)}"
+                f"[bold red]❌ DB ERROR:[/] {operation_name} failed in {elapsed:.3f}s: {str(e)}"
             )
             console.print(
                 f"[dim red]  └─ {traceback.format_exc().splitlines()[-1]}[/dim red]"
             )
 
-            # Re-lanzar la excepción
             raise
 
     return wrapper
 
 
 def auto_schema(name_override: str):
-    """Decorador que genera automáticamente el esquema JSON para las funciones de la base de datos."""
+    """Decorator that automatically generates JSON schema for database functions."""
 
     def decorator(func: Callable):
         @wraps(func)
-        @db_tracer  # Añadir el decorador de trazado de base de datos
+        @db_tracer  # Add database tracing decorator
         async def wrapper(ctx: RunContextWrapper[Any], *args, **kwargs):
             return await func(ctx, *args, **kwargs)
 
@@ -102,266 +93,309 @@ def auto_schema(name_override: str):
 
 
 # --- Database Tools --- #
-@auto_schema(name_override="obtener_productos")
-async def get_productos(ctx: RunContextWrapper[Any]) -> str:
-    """Obtener todos los productos disponibles en la base de datos."""
+@auto_schema(name_override="get_products")
+async def get_products(ctx: RunContextWrapper[Any]) -> str:
+    """Get all available products from the database."""
     try:
-        console.print("[bold blue]📊 Consultando tabla productos...[/bold blue]")
+        console.print("[bold blue]📊 Querying products table...[/bold blue]")
         response = supabase.table("productos").select("*").execute()
 
         if not response.data:
-            console.print("[bold yellow]⚠️ La consulta no retornó datos[/bold yellow]")
+            console.print("[bold yellow]⚠️ The query returned no data[/bold yellow]")
             return "[]"
 
-        productos = [Producto(**producto) for producto in response.data]
-        console.print(
-            f"[bold green]✅ Encontrados {len(productos)} productos[/bold green]"
-        )
+        # Map Spanish field names to English field names required by the model
+        products_mapped = []
+        for p in response.data:
+            # Transform the keys from Spanish to English
+            product_mapped = {
+                "id": p.get("id"),
+                "name": p.get("nombre"),
+                "brand": p.get("marca"),
+                "price": p.get("precio"),
+                "created_at": p.get("created_at"),
+                "updated_at": p.get("updated_at"),
+            }
+            products_mapped.append(product_mapped)
 
-        # Mostrar resumen de los productos encontrados
-        for p in productos[:3]:  # Solo mostrar hasta 3 para no saturar
-            console.print(f"[dim]  └─ {p.nombre}: ${p.precio} (ID: {p.id})[/dim]")
+        # Create product instances with the correctly mapped fields
+        products = [Product(**product) for product in products_mapped]
 
-        if len(productos) > 3:
-            console.print(f"[dim]  └─ ... y {len(productos) - 3} más[/dim]")
+        console.print(f"[bold green]✅ Found {len(products)} products[/bold green]")
 
+        for p in products[:3]:
+            console.print(f"[dim]  └─ {p.name}: ${p.price} (ID: {p.id})[/dim]")
+
+        if len(products) > 3:
+            console.print(f"[dim]  └─ ... and {len(products) - 3} more[/dim]")
+
+        # Return products with English field names
         return str(
             [
-                {"nombre": p.nombre, "marca": p.marca, "precio": p.precio, "id": p.id}
-                for p in productos
+                {"name": p.name, "brand": p.brand, "price": p.price, "id": p.id}
+                for p in products
             ]
         )
     except Exception as e:
-        console.print(f"[bold red]❌ Error en consulta DB: {str(e)}[/bold red]")
-        return f"Error al obtener productos: {str(e)}"
+        console.print(f"[bold red]❌ Error in DB query: {str(e)}[/bold red]")
+        return f"Error getting products: {str(e)}"
 
 
-@auto_schema(name_override="obtener_producto")
-async def get_producto(ctx: RunContextWrapper[Any], producto_id: str) -> str:
-    """Obtener información detallada de un producto específico.
+@auto_schema(name_override="get_product")
+async def get_product(ctx: RunContextWrapper[Any], product_id: str) -> str:
+    """Get detailed information about a specific product.
 
     Args:
-        producto_id: El ID del producto a buscar
+        product_id: The ID of the product to search for
     """
     try:
         response = (
             supabase.table("productos")
             .select("*")
-            .eq("id", producto_id)
+            .eq("id", product_id)
             .single()
             .execute()
         )
         if response.data:
-            producto = Producto(**response.data)
+            # Map Spanish field names to English field names required by the model
+            product_mapped = {
+                "id": response.data.get("id"),
+                "name": response.data.get("nombre"),
+                "brand": response.data.get("marca"),
+                "price": response.data.get("precio"),
+                "created_at": response.data.get("created_at"),
+                "updated_at": response.data.get("updated_at"),
+            }
+
+            # Create a product instance with the mapped fields
+            product = Product(**product_mapped)
+
             return str(
                 {
-                    "nombre": producto.nombre,
-                    "marca": producto.marca,
-                    "precio": producto.precio,
+                    "name": product.name,
+                    "brand": product.brand,
+                    "price": product.price,
                 }
             )
-        return "Producto no encontrado"
+        return "Product not found"
     except Exception as e:
-        return f"Error al obtener producto: {str(e)}"
+        return f"Error getting product: {str(e)}"
 
 
-@auto_schema(name_override="crear_producto")
-async def crear_producto(ctx: RunContextWrapper[Any], producto: ProductoInput) -> str:
-    """Crear un nuevo producto en la base de datos.
+@auto_schema(name_override="create_product")
+async def create_product(ctx: RunContextWrapper[Any], product: ProductInput) -> str:
+    """Create a new product in the database.
 
     Args:
-        producto: Datos del producto a crear
+        product: Product data to create
     """
     try:
-        response = (
-            supabase.table("productos")
-            .insert(producto.model_dump(exclude_unset=True))
-            .execute()
-        )
+        # Map from English model fields to Spanish database fields
+        product_data = {
+            "nombre": product.name,
+            "marca": product.brand,
+            "precio": product.price,
+        }
+
+        response = supabase.table("productos").insert(product_data).execute()
         if response.data:
-            return f"Producto creado exitosamente: {producto.nombre} - {producto.marca}"
-        return "Error al crear el producto"
+            return f"Product successfully created: {product.name} - {product.brand}"
+        return "Error creating product"
     except Exception as e:
-        return f"Error al crear producto: {str(e)}"
+        return f"Error creating product: {str(e)}"
 
 
-@auto_schema(name_override="crear_compra")
-async def crear_compra(ctx: RunContextWrapper[Any], compra: CompraInput) -> str:
-    """Crear una nueva compra en la base de datos.
+@auto_schema(name_override="create_purchase")
+async def create_purchase(ctx: RunContextWrapper[Any], purchase: PurchaseInput) -> str:
+    """Create a new purchase in the database.
 
     Args:
-        compra: Datos de la compra a crear
+        purchase: Purchase data to create
     """
     try:
-        compra_data = {
-            "monto": float(compra.monto),
-            "tipo_compra_id": compra.tipo_compra_id,
+        purchase_data = {
+            "monto": float(purchase.amount),
+            "tipo_compra_id": purchase.purchase_type_id,
             "fecha": datetime.now().isoformat(),
         }
 
-        # Log para depuración
         console.print(
-            f"[bold blue]📝 Creando compra:[/] Monto: ${compra.monto}, Tipo: {compra.tipo_compra_id}"
+            f"[bold blue]📝 Creating purchase:[/] Amount: ${purchase.amount}, Type: {purchase.purchase_type_id}"
         )
-        console.print(f"[dim blue]  └─ Datos a insertar: {compra_data}[/dim blue]")
+        console.print(f"[dim blue]  └─ Data to insert: {purchase_data}[/dim blue]")
 
-        response_compra = supabase.table("compras").insert(compra_data).execute()
+        response_purchase = supabase.table("compras").insert(purchase_data).execute()
 
-        if not response_compra.data:
+        if not response_purchase.data:
             console.print(
-                "[bold red]❌ Error:[/] No se recibieron datos de respuesta al crear la compra"
+                "[bold red]❌ Error:[/] No response data received when creating purchase"
             )
-            return "Error al crear la compra: No se recibieron datos de respuesta"
+            return "Error creating purchase: No response data received"
 
-        compra_id = response_compra.data[0]["id"]
-        console.print(f"[bold green]✅ Compra creada:[/] ID: {compra_id}")
+        purchase_id = response_purchase.data[0]["id"]
+        console.print(f"[bold green]✅ Purchase created:[/] ID: {purchase_id}")
 
-        # Crear las relaciones con productos
-        for producto in compra.productos:
-            producto_data = {
-                "compra_id": compra_id,
-                "producto_id": producto.producto_id,
-                "cantidad": producto.cantidad,
-                "precio_unitario": float(producto.precio_unitario),
-                "subtotal": float(producto.cantidad * producto.precio_unitario),
+        for product in purchase.products:
+            product_data = {
+                "compra_id": purchase_id,
+                "producto_id": product.product_id,
+                "cantidad": product.quantity,
+                "precio_unitario": float(product.unit_price),
+                "subtotal": float(product.quantity * product.unit_price),
             }
 
             console.print(
-                f"[bold blue]📝 Añadiendo producto a compra:[/] {producto.producto_id} x{producto.cantidad}"
+                f"[bold blue]📝 Adding product to purchase:[/] {product.product_id} x{product.quantity}"
             )
-            producto_response = (
-                supabase.table("compras_productos").insert(producto_data).execute()
+            product_response = (
+                supabase.table("compras_productos").insert(product_data).execute()
             )
 
-            if not producto_response.data:
+            if not product_response.data:
                 console.print(
-                    f"[bold yellow]⚠️ Advertencia:[/] No se recibieron datos al añadir producto {producto.producto_id}"
+                    f"[bold red]❌ Error:[/] No data received when adding product {product.product_id}"
                 )
 
-        return f"Compra creada exitosamente. ID: {compra_id}"
+        return f"Purchase created successfully. ID: {purchase_id}"
     except Exception as e:
-        console.print(f"[bold red]❌ Error al crear compra:[/] {str(e)}")
+        console.print(f"[bold red]❌ Error creating purchase:[/] {str(e)}")
         console.print(f"[dim red]{traceback.format_exc()}[/dim red]")
-        return f"Error al crear compra: {str(e)}"
+        return f"Error creating purchase: {str(e)}"
 
 
-@auto_schema(name_override="obtener_tipos_compra")
-async def get_tipos_compra(ctx: RunContextWrapper[Any]) -> str:
-    """Obtener todos los tipos de compra disponibles."""
+@auto_schema(name_override="get_purchase_types")
+async def get_purchase_types(ctx: RunContextWrapper[Any]) -> str:
+    """Get all available purchase types."""
     try:
         response = supabase.table("tipo_compra").select("*").execute()
-        tipos = [TipoCompra(**tipo) for tipo in response.data]
-        tipos_list = [
-            {"id": str(t.id), "nombre": t.nombre, "descripcion": t.descripcion or ""}
-            for t in tipos
+
+        # Map Spanish field names to English field names
+        types_mapped = []
+        for t in response.data:
+            type_mapped = {
+                "id": t.get("id"),
+                "name": t.get("nombre", ""),
+                "description": t.get("descripcion", ""),
+                "created_at": t.get("created_at"),
+            }
+            types_mapped.append(type_mapped)
+
+        types = [PurchaseType(**type_mapped) for type_mapped in types_mapped]
+        types_list = [
+            {"id": str(t.id), "name": t.name, "description": t.description or ""}
+            for t in types
         ]
 
-        # Añadir un tipo por defecto para Mercado Pago si no existe
         mercado_pago_exists = any(
-            t["nombre"].lower() == "mercado pago" for t in tipos_list
+            t["name"].lower() == "mercado pago" for t in types_list
         )
         if not mercado_pago_exists:
-            # Si no existe Mercado Pago, devolver información adicional
-            console.print("[bold yellow]⚠️ No se encontró tipo 'Mercado Pago'[/]")
+            console.print("[bold yellow]⚠️ Type 'Mercado Pago' not found[/]")
             console.print(
-                "[dim yellow]  └─ Se usará el primer tipo disponible o se creará uno nuevo[/dim yellow]"
+                "[dim yellow]  └─ Will use the first available type or create a new one[/dim yellow]"
             )
 
-            # Si hay tipos disponibles, sugerir usar el primero
-            if tipos_list:
+            if types_list:
                 console.print(
-                    f"[dim yellow]  └─ Usando tipo: {tipos_list[0]['nombre']} (ID: {tipos_list[0]['id']})[/dim yellow]"
+                    f"[dim yellow]  └─ Using type: {types_list[0]['name']} (ID: {types_list[0]['id']})[/dim yellow]"
                 )
 
-        # Formatear para mejor legibilidad por el agente
-        formatted_output = json.dumps(tipos_list, ensure_ascii=False, indent=2)
+        formatted_output = json.dumps(types_list, ensure_ascii=False, indent=2)
         console.print(
-            f"[bold green]✅ Tipos de compra recuperados:[/] {len(tipos_list)} tipos"
+            f"[bold green]✅ Payment types retrieved:[/] {len(types_list)} types"
         )
         return formatted_output
 
     except Exception as e:
-        error_msg = f"Error al obtener tipos de compra: {str(e)}"
+        error_msg = f"Error getting payment types: {str(e)}"
         console.print(f"[bold red]❌ {error_msg}[/]")
         return error_msg
 
 
-@auto_schema(name_override="generar_reporte_ventas")
-async def get_reporte_ventas(
-    ctx: RunContextWrapper[Any], reporte: ReporteVentasInput
+@auto_schema(name_override="generate_sales_report")
+async def generate_sales_report(
+    ctx: RunContextWrapper[Any], report: SalesReportInput
 ) -> str:
-    """Generar un reporte de ventas para un período específico.
+    """Generate a sales report for a specific period.
 
     Args:
-        reporte: Datos para generar el reporte de ventas
+        report: Data to generate the sales report
     """
     try:
-        fecha_inicio_dt = datetime.fromisoformat(reporte.fecha_inicio)
-        fecha_fin_dt = datetime.fromisoformat(reporte.fecha_fin)
+        start_date_dt = datetime.fromisoformat(report.start_date)
+        end_date_dt = datetime.fromisoformat(report.end_date)
 
-        # Obtener compras del período
+        # Get purchases for the period
         query = (
             supabase.table("compras")
             .select("*")
-            .gte("fecha", fecha_inicio_dt.isoformat())
-            .lte("fecha", fecha_fin_dt.isoformat())
+            .gte("fecha", start_date_dt.isoformat())
+            .lte("fecha", end_date_dt.isoformat())
         )
 
         response = query.execute()
-        compras = [Compra(**compra) for compra in response.data]
 
-        # Calcular estadísticas
-        total_ventas = sum(compra.monto for compra in compras)
-        cantidad_compras = len(compras)
-        promedio_compra = total_ventas / cantidad_compras if cantidad_compras > 0 else 0
+        # Map Spanish field names to English field names
+        purchases_mapped = []
+        for p in response.data:
+            purchase_mapped = {
+                "id": p.get("id"),
+                "purchase_number": p.get("numero_compra"),
+                "amount": p.get("monto"),
+                "date": p.get("fecha"),
+                "purchase_type_id": p.get("tipo_compra_id"),
+                "created_at": p.get("created_at"),
+                "updated_at": p.get("updated_at"),
+            }
+            purchases_mapped.append(purchase_mapped)
+
+        purchases = [Purchase(**purchase) for purchase in purchases_mapped]
+
+        # Calculate statistics
+        total_sales = sum(purchase.amount for purchase in purchases)
+        purchase_count = len(purchases)
+        average_purchase = total_sales / purchase_count if purchase_count > 0 else 0
 
         return str(
             {
-                "total_ventas": total_ventas,
-                "cantidad_compras": cantidad_compras,
-                "promedio_compra": promedio_compra,
-                "periodo": f"Del {reporte.fecha_inicio} al {reporte.fecha_fin}",
+                "total_sales": total_sales,
+                "purchase_count": purchase_count,
+                "average_purchase": average_purchase,
+                "period": f"From {report.start_date} to {report.end_date}",
             }
         )
     except Exception as e:
-        return f"Error al generar reporte: {str(e)}"
+        return f"Error generating report: {str(e)}"
 
 
 @auto_schema(name_override="test_connection")
 async def test_connection(ctx: RunContextWrapper[Any]) -> str:
     """Test the database connection by attempting to create and read a test product."""
     try:
-        # Try to create a test product
         test_product = {
-            "nombre": "Producto de Prueba",
+            "nombre": "Test Product",
             "marca": "Test",
             "precio": 0.01,
-            "descripcion": "Este es un producto de prueba para verificar la conexión",
+            "descripcion": "This is a test product to verify connection",
         }
 
-        # Attempt to insert
         insert_response = supabase.table("productos").insert(test_product).execute()
 
         if not insert_response.data:
-            return "❌ Error: No se pudo insertar el producto de prueba"
+            return "❌ Error: Could not insert test product"
 
-        # Get the inserted product ID
         product_id = insert_response.data[0]["id"]
 
-        # Try to read the product back
         read_response = (
             supabase.table("productos").select("*").eq("id", product_id).execute()
         )
 
         if not read_response.data:
-            return "❌ Error: No se pudo leer el producto de prueba"
+            return "❌ Error: Could not read test product"
 
-        # Clean up - delete the test product
         supabase.table("productos").delete().eq("id", product_id).execute()
 
-        return (
-            "✅ Conexión exitosa: Se pudo crear, leer y eliminar un producto de prueba"
-        )
+        return "✅ Successful connection: Test product was created, read and deleted"
 
     except Exception as e:
-        return f"❌ Error de conexión: {str(e)}"
+        return f"❌ Connection error: {str(e)}"

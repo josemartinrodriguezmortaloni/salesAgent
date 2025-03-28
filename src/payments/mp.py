@@ -20,10 +20,8 @@ def get_apps_script_endpoint():
     Returns:
         str: Webhook URL for Mercado Pago notifications
     """
-    # Get webhook URL from .env file
     webhook_url = os.environ.get("MP_WEBHOOK_URL")
 
-    # If not defined in .env, use default
     if not webhook_url:
         environment = os.environ.get("ENVIRONMENT", "development")
 
@@ -36,10 +34,10 @@ def get_apps_script_endpoint():
 
 
 def auto_schema(name_override: str):
-    """Decorador que genera automáticamente el esquema JSON para las funciones de la base de datos.
+    """Decorator that automatically generates the JSON schema for database functions.
 
     Args:
-        name_override: Nombre de la función para el agente
+        name_override: Function name for the agent
     """
 
     def decorator(func: Callable):
@@ -76,66 +74,60 @@ async def create_mercadopago_link(
     mp_token = os.environ.get("MP_ACCESS_TOKEN")
     dev_mode = os.environ.get("MP_DEV_MODE", "false").lower() == "true"
 
-    console.print(f"\n[bold cyan]💰 MERCADO PAGO[/]: Generando link de pago...")
-    console.print(f"[dim cyan]  └─ Monto: ${amount}[/dim cyan]")
-    console.print(f"[dim cyan]  └─ Título: {title}[/dim cyan]")
+    console.print(f"\n[bold cyan]💰 MERCADO PAGO[/]: Generating payment link...")
+    console.print(f"[dim cyan]  └─ Amount: ${amount}[/dim cyan]")
+    console.print(f"[dim cyan]  └─ Title: {title}[/dim cyan]")
     console.print(
-        f"[dim cyan]  └─ Modo desarrollo: {'Activado' if dev_mode else 'Desactivado'}[/dim cyan]"
+        f"[dim cyan]  └─ Development mode: {'Enabled' if dev_mode else 'Disabled'}[/dim cyan]"
     )
 
     if mp_token is None:
         console.print(
-            "[bold red]❌ ERROR MP[/]: MP_ACCESS_TOKEN no configurado en variables de entorno"
+            "[bold red]❌ MP ERROR[/]: MP_ACCESS_TOKEN not configured in environment variables"
         )
-        # En modo desarrollo, generar un link ficticio para testing
         if dev_mode:
             order_id = int(datetime.now().timestamp())
             mock_link = f"https://link.mercadopago.com/error-no-token"
             console.print(
-                f"[bold yellow]⚠️ MODO DESARROLLO[/]: Generando link ficticio: {mock_link}"
+                f"[bold yellow]⚠️ DEV MODE[/]: Generating mock link: {mock_link}"
             )
             return mock_link
         return "https://link.mercadopago.com/error-no-token"
 
     try:
-        # Crear ID único para la orden
         order_id = int(datetime.now().timestamp())
 
-        # En modo desarrollo, generar un link ficticio para testing
         if dev_mode:
             mock_link = (
                 f"https://link.mercadopago.com/test-payment-{order_id}?amount={amount}"
             )
             console.print(
-                f"[bold green]✅ MODO DESARROLLO[/]: Link de prueba generado: {mock_link}"
+                f"[bold green]✅ DEV MODE[/]: Test link generated: {mock_link}"
             )
             return mock_link
 
-        # Crear SDK de MercadoPago
         sdk = mercadopago.SDK(mp_token)
-        console.print(f"[bold yellow]⏳ PROCESANDO[/]: Conectando con Mercado Pago...")
+        console.print(f"[bold yellow]⏳ PROCESSING[/]: Connecting to Mercado Pago...")
 
-        # Configurar los datos del item
         item = {
             "title": title,
             "quantity": 1,
-            "unit_price": float(amount),  # Asegurar que es float
-            "currency_id": "ARS",  # Añadir moneda
+            "unit_price": float(amount),
+            "currency_id": "ARS",
         }
 
         if description:
             item["description"] = description
 
-        # Configurar la preferencia
         preference_data = {
             "items": [item],
             "back_urls": {
-                "success": "https://mitienda.com/success",
-                "failure": "https://mitienda.com/failure",
-                "pending": "https://mitienda.com/pending",
+                "success": "https://mystore.com/success",
+                "failure": "https://mystore.com/failure",
+                "pending": "https://mystore.com/pending",
             },
             "auto_return": "approved",
-            "statement_descriptor": "MiTienda Online",
+            "statement_descriptor": "MyOnlineStore",
             "external_reference": str(order_id),
             "expires": True,
             "expiration_date_from": datetime.now().isoformat(),
@@ -143,32 +135,29 @@ async def create_mercadopago_link(
         }
 
         console.print(
-            "[bold yellow]⏳ PROCESANDO[/]: Enviando solicitud a MercadoPago..."
+            "[bold yellow]⏳ PROCESSING[/]: Sending request to MercadoPago..."
         )
 
-        # Crear la preferencia real
         preference_response = sdk.preference().create(preference_data)
         preference = preference_response["response"]
 
         if preference_response["status"] != 201:
             console.print(
-                f"[bold red]❌ ERROR MP[/]: Error al crear preferencia: {preference_response['response']}"
+                f"[bold red]❌ MP ERROR[/]: Error creating preference: {preference_response['response']}"
             )
             return f"https://link.mercadopago.com/error-{order_id}"
 
-        # Obtener el link de pago
         payment_link = preference["init_point"]
-        console.print(f"[bold green]✅ ÉXITO[/]: Link generado: {payment_link}")
+        console.print(f"[bold green]✅ SUCCESS[/]: Link generated: {payment_link}")
         return payment_link
 
     except Exception as e:
-        console.print(f"[bold red]❌ ERROR MP[/]: {str(e)}")
+        console.print(f"[bold red]❌ MP ERROR[/]: {str(e)}")
 
-        # En modo desarrollo, generar un link ficticio para testing
         if dev_mode:
             mock_link = f"https://link.mercadopago.com/error-exception-{int(datetime.now().timestamp())}"
             console.print(
-                f"[bold yellow]⚠️ MODO DESARROLLO[/]: Generando link ficticio por error: {mock_link}"
+                f"[bold yellow]⚠️ DEV MODE[/]: Generating mock link due to error: {mock_link}"
             )
             return mock_link
 

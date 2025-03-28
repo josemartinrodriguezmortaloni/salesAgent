@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
 import traceback
-from datetime import datetime
 from rich.table import Table
 from src.db.supabase_client import supabase
 from init_db import init_database
@@ -21,59 +20,53 @@ load_dotenv()
 
 
 async def show_menu():
-    """Muestra el menú de productos disponibles como carta de restaurante"""
+    """Displays the menu of available products as a restaurant menu"""
     console.print("\n" + "━" * 80)
-    console.print("[bold cyan]🍕 NUESTRO MENÚ DE PIZZAS[/]")
+    console.print("[bold cyan]🍕 OUR PIZZA MENU[/]")
 
     try:
         response = supabase.table("productos").select("*").execute()
         products = response.data
 
-        # Crear tabla para el menú
-        table = Table(title="CARTA DEL RESTAURANTE")
-        table.add_column("🍕 Variedad", style="cyan")
-        table.add_column("💲 Precio", style="green")
-        table.add_column("🏷️ Marca", style="yellow")
+        table = Table(title="RESTAURANT MENU")
+        table.add_column("🍕 Variety", style="cyan")
+        table.add_column("💲 Price", style="green")
+        table.add_column("🏷️ Brand", style="yellow")
 
-        # Ordenar productos por precio
         products = sorted(products, key=lambda x: x["precio"])
 
-        # Agregar los productos al menú
         for p in products:
             table.add_row(p["nombre"], f"${p['precio']}", p["marca"])
 
         console.print(table)
         console.print(
-            "\n[bold cyan]¡Haz tu pedido ahora! Simplemente escribe qué pizza deseas ordenar.[/]"
+            "\n[bold cyan]Place your order now! Simply type which pizza you'd like to order.[/]"
         )
         console.print("━" * 80 + "\n")
 
     except Exception as e:
-        console.print(f"[bold red]❌ Error al cargar el menú: {str(e)}[/]")
+        console.print(f"[bold red]❌ Error loading menu: {str(e)}[/]")
 
 
 async def show_database_status():
-    """Muestra el estado actual de la conexión a la base de datos y los productos disponibles"""
+    """Shows the current status of the database connection and available products"""
     console.print("\n" + "━" * 80)
-    console.print("🔍 COMPROBANDO ESTADO DE LA BASE DE DATOS")
+    console.print("🔍 CHECKING DATABASE STATUS")
 
     try:
         response = supabase.table("productos").select("*").execute()
         products = response.data
 
-        # Crear tabla para el estado
-        table = Table(title="ESTADO DE LA BASE DE DATOS")
-        table.add_column("Estado", style="green")
-        table.add_column("Valor", style="cyan")
+        table = Table(title="DATABASE STATUS")
+        table.add_column("Status", style="green")
+        table.add_column("Value", style="cyan")
 
-        # Añadir información a la tabla
-        table.add_row("Conectado correctamente", "✅")
-        table.add_row("Latencia", "No disponible")
-        table.add_row("Registros", f"{len(products)} productos")
+        table.add_row("Connected correctly", "✅")
+        table.add_row("Latency", "Not available")
+        table.add_row("Records", f"{len(products)} products")
 
         console.print(table)
 
-        # Mostrar información detallada de los productos si hay pocos
         if len(products) <= 5:
             for p in products:
                 console.print(
@@ -82,17 +75,16 @@ async def show_database_status():
                 )
 
     except Exception as e:
-        console.print(f"[bold red]❌ Error al conectar con Supabase: {str(e)}[/]")
+        console.print(f"[bold red]❌ Error connecting to Supabase: {str(e)}[/]")
 
 
 async def main():
-    # Inicializar la base de datos con datos necesarios
     await init_database()
 
     console.print(
         Panel(
-            "Sistema de ordenamiento y pagos con agentes de IA",
-            title="SISTEMA INICIADO",
+            "AI agent ordering and payment system",
+            title="SYSTEM STARTED",
             border_style="green",
             expand=False,
         )
@@ -100,30 +92,24 @@ async def main():
 
     await show_database_status()
 
-    # Mostrar el menú de productos
     await show_menu()
 
     agents = Agents()
-    # Opciones:
-    # 1. context = None - Usará el nuevo formato de diccionario
-    # 2. context = ChatContext() - Usará el formato original de objeto
-    # Elegimos usar el formato original para compatibilidad
     context = ChatContext()
 
     while True:
-        query = input("\nTu pedido 🍕 > ")
+        query = input("\nYour order 🍕 > ")
 
         if query.lower() == "exit":
             break
 
         if query.lower() == "debug":
-            # Comando especial para mostrar estado actual
             if hasattr(context, "get_messages"):
                 console.print(
                     Panel(
-                        f"Mensajes en contexto: {len(context.get_messages())}\n"
-                        + f"Items en orden: {list(context.current_order.keys()) if context.current_order else 'Ninguno'}",
-                        title="ESTADO DEL CONTEXTO",
+                        f"Messages in context: {len(context.get_messages())}\n"
+                        + f"Items in order: {list(context.current_order.keys()) if context.current_order else 'None'}",
+                        title="CONTEXT STATUS",
                         border_style="yellow",
                         expand=False,
                     )
@@ -131,18 +117,17 @@ async def main():
             elif context and "messages" in context:
                 console.print(
                     Panel(
-                        f"Mensajes en contexto: {len(context['messages'])}",
-                        title="ESTADO DEL CONTEXTO",
+                        f"Messages in context: {len(context['messages'])}",
+                        title="CONTEXT STATUS",
                         border_style="yellow",
                         expand=False,
                     )
                 )
             else:
-                console.print("[yellow]No hay contexto activo todavía[/]")
+                console.print("[yellow]No active context yet[/]")
             continue
 
         if query.lower() == "db-status":
-            # Comando especial para verificar estado de la base de datos
             await show_database_status()
             continue
 
@@ -150,12 +135,11 @@ async def main():
             await show_menu()
             continue
 
-        # Procesar la consulta normal
         try:
             response = await agents.run(query, context=context)
         except Exception as e:
             console.print(
-                f"[bold red]Error al procesar la consulta: {str(e)}[/]", highlight=False
+                f"[bold red]Error processing query: {str(e)}[/]", highlight=False
             )
             traceback.print_exc()
 

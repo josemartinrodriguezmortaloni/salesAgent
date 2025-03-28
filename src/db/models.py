@@ -3,77 +3,77 @@ from typing import Optional, List
 from pydantic import BaseModel, UUID4
 
 
-class TipoCompra(BaseModel):
+class PurchaseType(BaseModel):
     id: Optional[UUID4] = None
-    nombre: str
-    descripcion: Optional[str] = None
+    name: str
+    description: Optional[str] = None
     created_at: Optional[datetime] = None
 
 
-class Producto(BaseModel):
+class Product(BaseModel):
     id: Optional[UUID4] = None
-    nombre: str
-    marca: str
-    precio: float
+    name: str
+    brand: str
+    price: float
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
 
-class CompraProducto(BaseModel):
+class PurchaseProduct(BaseModel):
     id: Optional[UUID4] = None
-    compra_id: UUID4
-    producto_id: UUID4
-    cantidad: int
-    precio_unitario: float
+    purchase_id: UUID4
+    product_id: UUID4
+    quantity: int
+    unit_price: float
     subtotal: float
     created_at: Optional[datetime] = None
 
 
-class Compra(BaseModel):
+class Purchase(BaseModel):
     id: Optional[UUID4] = None
-    numero_compra: Optional[int] = None
-    monto: float
-    fecha: Optional[datetime] = None
-    tipo_compra_id: UUID4
+    purchase_number: Optional[int] = None
+    amount: float
+    date: Optional[datetime] = None
+    purchase_type_id: UUID4
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    productos: Optional[List[CompraProducto]] = None
+    products: Optional[List[PurchaseProduct]] = None
 
 
 # --- Models for Function Parameters --- #
-class ProductoInput(BaseModel):
-    """Modelo para la entrada de creación de producto."""
+class ProductInput(BaseModel):
+    """Model for product creation input."""
 
-    nombre: str
-    marca: str
-    precio: float
-
-
-class TipoCompraInput(BaseModel):
-    """Modelo para la entrada de creación de tipo de compra."""
-
-    nombre: str
-    descripcion: Optional[str] = None
+    name: str
+    brand: str
+    price: float
 
 
-class ProductoCompraInput(BaseModel):
-    """Modelo para la entrada de productos en una compra."""
+class PurchaseTypeInput(BaseModel):
+    """Model for purchase type creation input."""
 
-    producto_id: str
-    cantidad: int
-    precio_unitario: float
-
-
-class CompraInput(BaseModel):
-    """Modelo para la entrada de creación de compra."""
-
-    monto: float
-    tipo_compra_id: str
-    productos: List[ProductoCompraInput]
+    name: str
+    description: Optional[str] = None
 
 
-class ReporteVentasInput(BaseModel):
-    """Modelo para la entrada de generación de reporte de ventas."""
+class PurchaseProductInput(BaseModel):
+    """Model for products in a purchase input."""
 
-    fecha_inicio: str
-    fecha_fin: str
+    product_id: str
+    quantity: int
+    unit_price: float
+
+
+class PurchaseInput(BaseModel):
+    """Model for purchase creation input."""
+
+    amount: float
+    purchase_type_id: str
+    products: List[PurchaseProductInput]
+
+
+class SalesReportInput(BaseModel):
+    """Model for sales report generation input."""
+
+    start_date: str
+    end_date: str
