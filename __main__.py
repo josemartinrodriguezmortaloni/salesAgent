@@ -13,6 +13,8 @@ import traceback
 from rich.table import Table
 from src.db.supabase_client import supabase
 from init_db import init_database
+from src.api.run import app
+import uvicorn
 
 console = Console()
 
@@ -133,6 +135,11 @@ async def main():
 
         if query.lower() == "menu":
             await show_menu()
+            continue
+
+        if query.lower() == "api":
+            console.print("\nStarting API server...")
+            uvicorn.run(app, host="0.0.0.0", port=8000)
             continue
 
         try:
