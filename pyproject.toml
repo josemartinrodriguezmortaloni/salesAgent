@@ -5,12 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "aiohttp>=3.11.14",
+    "flask>=3.1.0",
     "mercadopago>=2.3.0",
+    "openai>=1.66.5",
     "openai-agents>=0.0.5",
     "psycopg2-binary>=2.9.10",
     "pydantic>=2.10.6",
     "python-dateutil>=2.9.0.post0",
     "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
     "rich>=13.9.4",
     "supabase>=2.14.0",
 ]

@@ -141,4 +141,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - OpenAI for providing the AI capabilities
 - Supabase for database infrastructure
-- LiveKit for real-time communication features

@@ -1,8 +1,14 @@
-livekit-agents
-livekit-plugins-openai
+
 python-dotenv
 pydantic
 supabase
 psycopg2-binary
 python-dateutil
 openai-agents
+flask
+python-dotenv
+openai
+aiohttp
+requests
+openai-agents
+

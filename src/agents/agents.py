@@ -239,7 +239,7 @@ class Agents:
        "NO_MATCH: Could not find a product matching [query]"
     """,
             tools=[get_products],
-            model="o3-mini",
+            model="gpt-4.1",
         )
         self.products_handoff = handoff(
             agent=self.productsagent,
@@ -295,8 +295,7 @@ class Agents:
                 get_purchase_types,
                 generate_sales_report,
             ],
-            model="o3-mini",
-            handoffs=[self.products_handoff],
+            model="gpt-4.1",
         )
         self.sales_handoff = handoff(
             agent=self.salesagent,
@@ -394,8 +393,11 @@ class Agents:
             - NEVER proceed with unconfirmed prices
             - ALWAYS verify that database IDs exist for all products
             - ALWAYS extract and display the payment link exactly as provided by the Sales Agent
+
+            PAYMENT LINK RULE:
+            - Only generate a payment link ONCE per order. If a payment link has already been generated (context.payment_generated is True), do NOT call the Sales Agent again. Instead, simply resend the existing payment link from context.payment_link if the user requests it again.
             """,
-            model="o3-mini",
+            model="gpt-4.1",
             handoffs=[self.salesagent, self.productsagent],
         )
         self.current_conversations = []
@@ -506,6 +508,21 @@ class Agents:
             context["messages"].append({"role": "assistant", "content": response})
         else:
             context.add_message("assistant", response)
+
+        # Guardrail: If payment already generated, block duplicate payment link generation
+        if hasattr(context, "payment_generated") and context.payment_generated:
+            # If the agent tries to generate another payment link, just return the existing one
+            if isinstance(text, str) and (
+                "pagar" in text.lower()
+                or "pay" in text.lower()
+                or "payment" in text.lower()
+            ):
+                if getattr(context, "payment_link", None):
+                    return f"Your payment link is: {context.payment_link}"
+                else:
+                    return "You have already generated a payment link for this order."
+            # For any other repeated payment attempt, do nothing
+            return ""
 
         return response
 
